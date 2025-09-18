@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import Auth from "../models/Auth";
 import {
-  TAuth,
+  IAuth,
   PickLogin,
   PickRegister,
   JwtPayload,
   PickLogout,
+  PickId,
 } from "../types/auth.types";
-import { verifyToken } from "../middleware/auth";
+import { verifyToken } from "../middlewares/auth";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -24,7 +25,7 @@ class AuthController {
     try {
       const auth: PickRegister = req.body;
 
-      if (!auth.email || !auth.fullName || !auth.phone || !auth.password) {
+      if (!auth.email || !auth.fullName || !auth.password) {
         res.status(400).json({
           status: 400,
           message: "All field is required",
@@ -32,7 +33,7 @@ class AuthController {
         return;
       }
 
-      const isAlreadyRegistered: TAuth | null = await Auth.findOne({
+      const isAlreadyRegistered: IAuth | null = await Auth.findOne({
         email: auth.email,
       });
 
@@ -52,8 +53,8 @@ class AuthController {
         const newAuth = new Auth({
           email: auth.email,
           fullName: auth.fullName,
-          phone: auth.phone,
           password: hash,
+          role: auth.role || "user",
         });
 
         await newAuth.save();
@@ -87,7 +88,7 @@ class AuthController {
         return;
       }
 
-      const isAuthExist: TAuth | null = await Auth.findOne({
+      const isAuthExist: IAuth | null = await Auth.findOne({
         email: auth.email,
       });
       if (!isAuthExist) {
@@ -114,7 +115,7 @@ class AuthController {
         _id: isAuthExist._id,
         email: isAuthExist.email,
         fullName: isAuthExist.fullName,
-        phone: isAuthExist.phone,
+        role: (isAuthExist as any).role,
       };
 
       if (!process.env.JWT_SECRET) {
@@ -161,7 +162,7 @@ class AuthController {
       try {
         const { _id }: PickLogout = req.user as JwtPayload;
 
-        const auth: TAuth | null = await Auth.findById(_id);
+        const auth: IAuth | null = await Auth.findById(_id);
 
         if (!auth) {
           res.status(404).json({
@@ -184,6 +185,38 @@ class AuthController {
         res.status(500).json({
           status: 500,
           message: "Internal server error",
+        });
+        return;
+      }
+    },
+  ];
+  public getProfileByUser = [
+    verifyToken,
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const { _id }: PickId = req.user as JwtPayload;
+
+        const auth: IAuth | null = await Auth.findById(_id);
+
+        if (!auth) {
+          res.status(400).json({
+            status: 400,
+            message: "Account not found",
+          });
+          return;
+        }
+
+        res.status(200).json({
+          status: 200,
+          message: "User Profile Found",
+          data: auth,
+        });
+        return;
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
         });
         return;
       }

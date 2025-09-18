@@ -2,6 +2,9 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import authRouter from "./routes/AuthRouter";
+import UserRouter from "./routes/UserRouter";
+import SuperAdminRouter from "./routes/SuperAdminRouter";
+import RestaurantRouter from "./routes/RestaurantRouter";
 
 class App {
   public app: Application;
@@ -20,6 +23,9 @@ class App {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use("/api/auth", authRouter);
+    this.app.use("/api/user", UserRouter);
+    this.app.use("/api/superAdmin", SuperAdminRouter);
+    this.app.use("/api/restaurant", RestaurantRouter);
   }
 
   private routes(): void {

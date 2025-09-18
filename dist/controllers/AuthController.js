@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Auth_1 = __importDefault(require("../models/Auth"));
-const auth_1 = require("../middleware/auth");
+const auth_1 = require("../middlewares/auth");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 class AuthController {
@@ -12,7 +12,7 @@ class AuthController {
         this.register = async (req, res) => {
             try {
                 const auth = req.body;
-                if (!auth.email || !auth.fullName || !auth.phone || !auth.password) {
+                if (!auth.email || !auth.fullName || !auth.password) {
                     res.status(400).json({
                         status: 400,
                         message: "All field is required",
@@ -37,8 +37,8 @@ class AuthController {
                     const newAuth = new Auth_1.default({
                         email: auth.email,
                         fullName: auth.fullName,
-                        phone: auth.phone,
                         password: hash,
+                        role: auth.role || "user",
                     });
                     await newAuth.save();
                     res.status(201).json({
@@ -88,7 +88,7 @@ class AuthController {
                     _id: isAuthExist._id,
                     email: isAuthExist.email,
                     fullName: isAuthExist.fullName,
-                    phone: isAuthExist.phone,
+                    role: isAuthExist.role,
                 };
                 if (!process.env.JWT_SECRET) {
                     console.error("JWT_SECRET is not defined in environment variables");
@@ -146,6 +146,36 @@ class AuthController {
                     res.status(500).json({
                         status: 500,
                         message: "Internal server error",
+                    });
+                    return;
+                }
+            },
+        ];
+        this.getProfileByUser = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const { _id } = req.user;
+                    const auth = await Auth_1.default.findById(_id);
+                    if (!auth) {
+                        res.status(400).json({
+                            status: 400,
+                            message: "Account not found",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "User Profile Found",
+                        data: auth,
+                    });
+                    return;
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
                     });
                     return;
                 }

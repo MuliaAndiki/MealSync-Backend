@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { TAuth } from "../types/auth.types";
+import { IAuth } from "../types/auth.types";
 
-type partialAuth = Partial<TAuth>;
+type partialAuth = Partial<IAuth>;
 
 const Auth = new Schema<partialAuth>(
   {
@@ -18,11 +18,7 @@ const Auth = new Schema<partialAuth>(
       type: String,
       required: true,
     },
-    phone: {
-      type: String,
-      required: true,
-      match: [/^[0-9]+$/, "Phone number must contain digits only"],
-    },
+
     password: {
       type: String,
       required: true,
@@ -34,6 +30,12 @@ const Auth = new Schema<partialAuth>(
     token: {
       type: String,
       default: null,
+    },
+    role: {
+      type: String,
+      enum: ["superadmin", "restaurant", "user"],
+      default: "user",
+      required: true,
     },
   },
   { timestamps: true }

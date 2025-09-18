@@ -1,0 +1,10 @@
+import { Document, Types } from "mongoose";
+export interface IProduct extends Document {
+  _id: any;
+  name: string;
+  price: number;
+  description?: string;
+  restaurantId: Types.ObjectId;
+}
+
+export type CreateProduct = Pick<IProduct, "name" | "price" | "description">;

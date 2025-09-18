@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Product_1 = __importDefault(require("../models/Product"));
 const Restaurant_1 = __importDefault(require("../models/Restaurant"));
 const Order_1 = __importDefault(require("../models/Order"));
-const response_1 = require("../utils/response");
 const auth_1 = require("../middlewares/auth");
 const mongoose_1 = __importDefault(require("mongoose"));
 class RestaurantController {
@@ -58,117 +57,222 @@ class RestaurantController {
                 }
             },
         ];
-        // public createProduct = async (req: Request, res: Response) => {
-        //   try {
-        //     const { name, price, description } = req.body as any;
-        //     const user = req.user as JwtPayload;
-        //     const restaurant = await Restaurant.findOne({ ownerAuthId: user._id });
-        //     if (!restaurant)
-        //       return res.status(404).json(notFound("Restaurant not found"));
-        //     if (!name || price == null)
-        //       return res.status(400).json(badRequest("name and price are required"));
-        //     const product = await Product.create({
-        //       name,
-        //       price,
-        //       description,
-        //       restaurantId: restaurant._id,
-        //     });
-        //     // fix
-        //     // restaurant.products.push(product._id);
-        //     await restaurant.save();
-        //     return res.status(201).json(created("Product created", product));
-        //   } catch (err: any) {
-        //     return res.status(500).json({ status: 500, message: err.message });
-        //   }
-        // };
         // PUT /api/restaurant/products/:id
-        // Fix
-        this.updateProduct = async (req, res) => {
-            try {
-                const user = req.user;
-                const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
-                if (!restaurant)
-                    return res.status(404).json((0, response_1.notFound)("Restaurant not found"));
-                const product = await Product_1.default.findOneAndUpdate({ _id: req.params.id, restaurantId: restaurant._id }, req.body, { new: true });
-                if (!product)
-                    return res.status(404).json((0, response_1.notFound)("Product not found"));
-                return res.status(200).json((0, response_1.ok)("Product updated", product));
-            }
-            catch (err) {
-                return res.status(500).json({ status: 500, message: err.message });
-            }
-        };
+        this.updateProduct = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant",
+                        });
+                        return;
+                    }
+                    const product = await Product_1.default.findOneAndUpdate({ _id: req.params._id, restaurantId: restaurant._id }, req.body, { new: true });
+                    if (!product) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Product Not Found",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfully Update Product",
+                        data: product,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
+        // GET /api/restaurant/products
+        this.getProduct = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant Not Found",
+                        });
+                        return;
+                    }
+                    const product = await Product_1.default.find({ restaurantId: restaurant._id });
+                    res.status(200).json({
+                        status: 200,
+                        message: "Successfully Get Products",
+                        data: product,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
         // DELETE /api/restaurant/products/:id
-        // Fix
-        this.deleteProduct = async (req, res) => {
-            try {
-                const user = req.user;
-                const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
-                if (!restaurant)
-                    return res.status(404).json((0, response_1.notFound)("Restaurant not found"));
-                const product = await Product_1.default.findOneAndDelete({
-                    _id: req.params.id,
-                    restaurantId: restaurant._id,
-                });
-                if (!product)
-                    return res.status(404).json((0, response_1.notFound)("Product not found"));
-                restaurant.products = restaurant.products.filter((p) => p.toString() !== req.params.id);
-                await restaurant.save();
-                return res.status(200).json((0, response_1.ok)("Product deleted", product));
-            }
-            catch (err) {
-                return res.status(500).json({ status: 500, message: err.message });
-            }
-        };
+        this.deleteProduct = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant NotFound",
+                        });
+                        return;
+                    }
+                    const product = await Product_1.default.findByIdAndDelete({
+                        _id: req.params._id,
+                        restaurantId: restaurant._id,
+                    });
+                    if (!product) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Product Not Found",
+                        });
+                        return;
+                    }
+                    restaurant.products = restaurant.products.filter((p) => p.toString() !== req.params._id);
+                    await restaurant.save();
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succes Product deleted",
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
         // GET /api/restaurant/orders
-        // Fix
-        this.listOrders = async (req, res) => {
-            try {
-                const user = req.user;
-                const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
-                if (!restaurant)
-                    return res.status(404).json((0, response_1.notFound)("Restaurant not found"));
-                const orders = await Order_1.default.find({ restaurantId: restaurant._id }).sort({
-                    createdAt: -1,
-                });
-                return res.status(200).json((0, response_1.ok)("Orders fetched", orders));
-            }
-            catch (err) {
-                return res.status(500).json({ status: 500, message: err.message });
-            }
-        };
+        this.listOrders = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant NotFound",
+                        });
+                        return;
+                    }
+                    const orders = await Order_1.default.find({ restaurantId: restaurant._id }).sort({
+                        createdAt: -1,
+                    });
+                    if (!orders) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Orders Not Found",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "Successfully Orders fetched",
+                        data: orders,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
         // GET /api/restaurant/orders/history
-        // Fix
-        this.ordersHistory = async (req, res) => {
-            try {
-                const user = req.user;
-                const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
-                if (!restaurant)
-                    return res.status(404).json((0, response_1.notFound)("Restaurant not found"));
-                const orders = await Order_1.default.find({
-                    restaurantId: restaurant._id,
-                    status: { $in: ["paid", "failed"] },
-                }).sort({ createdAt: -1 });
-                return res.status(200).json((0, response_1.ok)("Orders history fetched", orders));
-            }
-            catch (err) {
-                return res.status(500).json({ status: 500, message: err.message });
-            }
-        };
+        this.ordersHistory = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant NotFound",
+                        });
+                        return;
+                    }
+                    const orders = await Order_1.default.find({
+                        restaurantId: restaurant._id,
+                        status: { $in: ["paid", "failed"] },
+                    }).sort({ createdAt: -1 });
+                    if (!orders) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Orders NotFound",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfully Orders history fetched",
+                        data: orders,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
         // PUT /api/restaurant/profile
-        // Fix
-        this.updateProfile = async (req, res) => {
-            try {
-                const user = req.user;
-                const restaurant = await Restaurant_1.default.findOneAndUpdate({ ownerAuthId: user._id }, { $set: { profile: req.body } }, { new: true });
-                if (!restaurant)
-                    return res.status(404).json((0, response_1.notFound)("Restaurant not found"));
-                return res.status(200).json((0, response_1.ok)("Profile updated", restaurant));
-            }
-            catch (err) {
-                return res.status(500).json({ status: 500, message: err.message });
-            }
-        };
+        this.updateProfile = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const restaurant = await Restaurant_1.default.findOneAndUpdate({ ownerAuthId: user._id }, { $set: req.body }, { new: true });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant NotFound",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfully Profile updated",
+                        data: restaurant,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
     }
 }
 exports.default = new RestaurantController();

@@ -12,6 +12,7 @@ class SuperAdminRouter {
     }
     router() {
         this.superRouter.post("/restaurant", SuperAdminController_1.default.createRestaurant);
+        this.superRouter.get("/restaurants", SuperAdminController_1.default.listRestaurants);
     }
 }
 exports.default = new SuperAdminRouter().superRouter;

@@ -10,6 +10,7 @@ class SuperAdminRouter {
 
   private router() {
     this.superRouter.post("/restaurant", SuperAdminController.createRestaurant);
+    this.superRouter.get("/restaurants", SuperAdminController.listRestaurants);
   }
 }
 

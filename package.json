@@ -13,8 +13,10 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "midtrans-client": "^1.4.3",
     "mongoose": "^8.15.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "zod": "^4.1.9"
   },
   "devDependencies": {
     "@types/cors": "^2.8.18",

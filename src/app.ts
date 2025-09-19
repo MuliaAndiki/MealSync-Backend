@@ -5,6 +5,7 @@ import authRouter from "./routes/AuthRouter";
 import UserRouter from "./routes/UserRouter";
 import SuperAdminRouter from "./routes/SuperAdminRouter";
 import RestaurantRouter from "./routes/RestaurantRouter";
+import PaymentRouter from "./routes/PaymentRouter";
 
 class App {
   public app: Application;
@@ -26,6 +27,7 @@ class App {
     this.app.use("/api/user", UserRouter);
     this.app.use("/api/superAdmin", SuperAdminRouter);
     this.app.use("/api/restaurant", RestaurantRouter);
+    this.app.use("/api/payment", PaymentRouter);
   }
 
   private routes(): void {

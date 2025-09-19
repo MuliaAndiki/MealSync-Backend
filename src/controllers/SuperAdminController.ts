@@ -66,15 +66,25 @@ class SuperAdminController {
   ];
 
   // GET /api/superadmin/restaurants
-  // Fix
-  public listRestaurants = async (_req: Request, res: Response) => {
-    try {
-      const restaurants = await Restaurant.find().populate("products");
-      return res.status(200).json(ok("Restaurants fetched", restaurants));
-    } catch (err: any) {
-      return res.status(500).json({ status: 500, message: err.message });
-    }
-  };
+  public listRestaurants = [
+    verifyToken,
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const restaurant = await Restaurant.find().populate("products");
+        res.status(200).json({
+          status: 200,
+          message: "Succesfuly Restaurants fetched ",
+          data: restaurant,
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    },
+  ];
 }
 
 export default new SuperAdminController();

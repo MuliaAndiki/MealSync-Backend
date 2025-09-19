@@ -10,6 +10,7 @@ const AuthRouter_1 = __importDefault(require("./routes/AuthRouter"));
 const UserRouter_1 = __importDefault(require("./routes/UserRouter"));
 const SuperAdminRouter_1 = __importDefault(require("./routes/SuperAdminRouter"));
 const RestaurantRouter_1 = __importDefault(require("./routes/RestaurantRouter"));
+const PaymentRouter_1 = __importDefault(require("./routes/PaymentRouter"));
 class App {
     constructor() {
         this.app = (0, express_1.default)();
@@ -27,6 +28,7 @@ class App {
         this.app.use("/api/user", UserRouter_1.default);
         this.app.use("/api/superAdmin", SuperAdminRouter_1.default);
         this.app.use("/api/restaurant", RestaurantRouter_1.default);
+        this.app.use("/api/payment", PaymentRouter_1.default);
     }
     routes() {
         this.app.get("/", (req, res) => {

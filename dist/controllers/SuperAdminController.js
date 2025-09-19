@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Auth_1 = __importDefault(require("../models/Auth"));
 const Restaurant_1 = __importDefault(require("../models/Restaurant"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const response_1 = require("../utils/response");
 const auth_1 = require("../middlewares/auth");
 class SuperAdminController {
     constructor() {
@@ -66,16 +65,26 @@ class SuperAdminController {
             },
         ];
         // GET /api/superadmin/restaurants
-        // Fix
-        this.listRestaurants = async (_req, res) => {
-            try {
-                const restaurants = await Restaurant_1.default.find().populate("products");
-                return res.status(200).json((0, response_1.ok)("Restaurants fetched", restaurants));
-            }
-            catch (err) {
-                return res.status(500).json({ status: 500, message: err.message });
-            }
-        };
+        this.listRestaurants = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const restaurant = await Restaurant_1.default.find().populate("products");
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfuly Restaurants fetched ",
+                        data: restaurant,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
     }
 }
 exports.default = new SuperAdminController();

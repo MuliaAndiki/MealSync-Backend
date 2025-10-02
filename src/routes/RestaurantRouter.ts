@@ -25,6 +25,9 @@ class RestaurantRouter {
       RestaurantController.ordersHistory
     );
     this.restaurantRouter.put("/profile", RestaurantController.updateProfile);
+    this.restaurantRouter.post('/chair/:_id', RestaurantController.createChair)
+    this.restaurantRouter.get('/chair',RestaurantController.getChairs)
+    
   }
 }
 

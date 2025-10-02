@@ -32,6 +32,7 @@
   },
   "scripts": {
     "start": "node dist/server.js",
+    "start:prod": "npm run build && npm run start",
     "build": "tsc",
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts"
   }

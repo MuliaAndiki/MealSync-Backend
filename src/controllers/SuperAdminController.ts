@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import Auth from "../models/Auth";
 import Restaurant from "../models/Restaurant";
 import bcrypt from "bcryptjs";
-import { created, ok, badRequest, notFound } from "../utils/response";
 import { CreateRestaurantBody } from "../types/restaurant.types";
 import { verifyToken } from "../middlewares/auth";
 

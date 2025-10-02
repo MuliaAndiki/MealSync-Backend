@@ -13,6 +13,7 @@ const RestaurantSchema = new Schema<IRestaurant>(
     },
     products: [{ type: Schema.Types.ObjectId, ref: "Product", default: [] }],
     ownerAuthId: { type: Schema.Types.ObjectId, ref: "Auth", required: true },
+    chairId: [{ type: Schema.Types.ObjectId, ref: "Chair", require: [] }],
   },
   { timestamps: true }
 );

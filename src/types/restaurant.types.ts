@@ -12,6 +12,7 @@ export interface IRestaurant extends Document {
   };
   products: Types.ObjectId[];
   ownerAuthId: Types.ObjectId;
+  chairId: Types.ObjectId;
 }
 
 export type PickRestaurantPayload = Pick<

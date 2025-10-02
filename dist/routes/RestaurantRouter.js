@@ -18,6 +18,8 @@ class RestaurantRouter {
         this.restaurantRouter.get("/orders", RestaurantController_1.default.listOrders);
         this.restaurantRouter.get("/orders/history", RestaurantController_1.default.ordersHistory);
         this.restaurantRouter.put("/profile", RestaurantController_1.default.updateProfile);
+        this.restaurantRouter.post('/chair/:_id', RestaurantController_1.default.createChair);
+        this.restaurantRouter.get('/chair', RestaurantController_1.default.getChairs);
     }
 }
 exports.default = new RestaurantRouter().restaurantRouter;

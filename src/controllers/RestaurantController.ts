@@ -4,15 +4,17 @@ import Restaurant from "../models/Restaurant";
 import Order from "../models/Order";
 import Chair from "../models/Chair";
 import { JwtPayload } from "../types/auth.types";
-import { verifyToken } from "../middlewares/auth";
+import { requireRole, verifyToken } from "../middlewares/auth";
 import { CreateProduct } from "../types/product.types";
 import mongoose from "mongoose";
-import { CreateChair } from "../types/chair.types";
+import { uploadImages } from "../middlewares/multer";
+import { uploadCloudinary } from "../utils/uploadsClodinary";
 
 class RestaurantController {
   // POST /api/restaurant/products
   public createProduct = [
     verifyToken,
+    uploadImages,
     async (req: Request, res: Response): Promise<void> => {
       try {
         const prodouct: CreateProduct = req.body;
@@ -30,16 +32,32 @@ class RestaurantController {
         if (!prodouct.name || prodouct.price == null) {
           res.status(404).json({
             status: 404,
-            message: "name and price are required",
+            message: "name and price and category are required",
           });
           return;
+        }
+
+        // Ilmu
+        let documentUrl: { pictProduct: string } = { pictProduct: "" };
+        const base64Data = req.body.pictProduct;
+        if (base64Data) {
+          const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+          const result = await uploadCloudinary(
+            buffer,
+            "pictProduct",
+            "image.png"
+          );
+          documentUrl.pictProduct = result.secure_url;
         }
         const newProdouct = await Product.create({
           name: prodouct.name,
           price: prodouct.price,
+          category: prodouct.category,
           description: prodouct.description,
           restaurantId: restaurant._id,
+          pictProduct: documentUrl.pictProduct,
         });
+
         restaurant.products.push(newProdouct._id);
         await newProdouct.save();
 
@@ -68,7 +86,7 @@ class RestaurantController {
         if (!restaurant) {
           res.status(404).json({
             status: 404,
-            message: "Restaurant",
+            message: "Restaurant Not Found",
           });
           return;
         }
@@ -133,6 +151,45 @@ class RestaurantController {
     },
   ];
 
+  // Get /api/restaurant/products/:_id
+  public getProductId = [
+    verifyToken,
+    requireRole(["restaurant"]),
+    async (req: Request, res: Response): Promise<any> => {
+      try {
+        const user = req.user as JwtPayload;
+        const restaurant = await Restaurant.findOne({ ownerAuthId: user._id });
+        if (!restaurant) {
+          res.status(404).json({
+            status: 404,
+            message: "Restaurant NotFound",
+          });
+          return;
+        }
+        const prodouct = await Product.findById(req.params._id);
+        if (!prodouct) {
+          res.status(404).json({
+            status: 404,
+            message: "product id not found",
+          });
+          return;
+        }
+
+        res.status(200).json({
+          status: 200,
+          message: "Succesfilly Get Product By Id",
+          data: prodouct,
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    },
+  ];
+
   // DELETE /api/restaurant/products/:id
   public deleteProduct = [
     verifyToken,
@@ -177,7 +234,6 @@ class RestaurantController {
   ];
 
   // GET /api/restaurant/orders
-
   public listOrders = [
     verifyToken,
     async (req: Request, res: Response): Promise<void> => {
@@ -258,7 +314,6 @@ class RestaurantController {
   ];
 
   // PUT /api/restaurant/profile
-
   public updateProfile = [
     verifyToken,
     async (req: Request, res: Response): Promise<any> => {
@@ -293,36 +348,56 @@ class RestaurantController {
   ];
 
   // POST /api/restaurant/chair/:_id
-  public createChair = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { restaurantId } = req.params;
-      const { noChair, status } = req.body;
+  public createChair = [
+    verifyToken,
 
-      // Pastikan restoran ada
-      const restaurant = await Restaurant.findById(restaurantId);
-      if (!restaurant) {
-        res.status(404).json({ message: "Restaurant not found" });
-        return;
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const { noChair, status } = req.body;
+        const userId = req.user?._id;
+
+        const restaurant = await Restaurant.findOne({ ownerAuthId: userId });
+        if (!restaurant) {
+          res
+            .status(404)
+            .json({ message: "Restaurant untuk user ini tidak ditemukan" });
+          return;
+        }
+
+        const existingChair = await Chair.findOne({
+          restaurantId: restaurant._id,
+          noChair,
+        });
+        if (existingChair) {
+          res.status(409).json({
+            message: `Kursi nomor ${noChair} sudah terdaftar di restoran ini`,
+          });
+          return;
+        }
+
+        const newChair = new Chair({
+          noChair,
+          status: status || "empty",
+          restaurantId: restaurant._id,
+        });
+
+        await newChair.save();
+        await restaurant.save();
+
+        res.status(201).json({
+          status: 201,
+          message: "Success Create Chair",
+          data: newChair,
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
       }
-
-      // Buat kursi baru
-      const chair = new Chair({
-        noChair,
-        status,
-        restaurantId,
-      });
-      await chair.save();
-
-      await Restaurant.findByIdAndUpdate(restaurantId, {
-        $push: { chairId: chair._id },
-      });
-
-      res.status(201).json(chair);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to create chair", error });
-    }
-  };
-
+    },
+  ];
   // GET /api/restaurant/chair
   public getChairs = [
     verifyToken,

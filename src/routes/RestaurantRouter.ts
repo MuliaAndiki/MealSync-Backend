@@ -15,6 +15,10 @@ class RestaurantRouter {
       RestaurantController.updateProduct
     );
     this.restaurantRouter.get("/products", RestaurantController.getProduct);
+    this.restaurantRouter.get(
+      "/products/:_id",
+      RestaurantController.getProductId
+    );
     this.restaurantRouter.delete(
       "/products/:_id",
       RestaurantController.deleteProduct
@@ -25,9 +29,8 @@ class RestaurantRouter {
       RestaurantController.ordersHistory
     );
     this.restaurantRouter.put("/profile", RestaurantController.updateProfile);
-    this.restaurantRouter.post('/chair/:_id', RestaurantController.createChair)
-    this.restaurantRouter.get('/chair',RestaurantController.getChairs)
-    
+    this.restaurantRouter.post("/chair", RestaurantController.createChair);
+    this.restaurantRouter.get("/chair", RestaurantController.getChairs);
   }
 }
 

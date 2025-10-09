@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyToken = void 0;
+exports.requireRole = exports.verifyToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const verifyToken = (req, res, next) => {
     try {
@@ -55,3 +55,15 @@ const verifyToken = (req, res, next) => {
     }
 };
 exports.verifyToken = verifyToken;
+const requireRole = (roles) => {
+    return (req, res, next) => {
+        console.log("DEBUG: requireRole - req.user:", req.user);
+        console.log("DEBUG: requireRole - Required roles:", roles);
+        if (!req.user || !roles.includes(req.user.role)) {
+            res.status(403).json({ message: "Akses ditolak. Role tidak sesuai." });
+            return;
+        }
+        next();
+    };
+};
+exports.requireRole = requireRole;

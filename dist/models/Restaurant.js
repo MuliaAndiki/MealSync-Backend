@@ -12,6 +12,6 @@ const RestaurantSchema = new mongoose_1.Schema({
     },
     products: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Product", default: [] }],
     ownerAuthId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Auth", required: true },
-    chairId: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Chair", require: [] }],
+    chairId: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Chair", default: [] }],
 }, { timestamps: true });
 exports.default = (0, mongoose_1.model)("Restaurant", RestaurantSchema);

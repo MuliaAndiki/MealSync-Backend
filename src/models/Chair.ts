@@ -3,24 +3,15 @@ import { IChair } from "../types/chair.types";
 
 const ChairSchema = new Schema<IChair>(
   {
-    noChair: {
-      type: Number,
-      required: true,
-    },
+    noChair: { type: Number, required: true },
     restaurantId: {
       type: Schema.Types.ObjectId,
       ref: "Restaurant",
       required: true,
     },
-    status: {
-      type: String,
-      enum: ["empty", "full"],
-      default: "empty",
-    },
+    status: { type: String, enum: ["empty", "full"], default: "empty" },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model<IChair>("Chair", ChairSchema);

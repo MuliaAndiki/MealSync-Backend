@@ -17,7 +17,6 @@ class PaymentController {
                 if (!cart || cart.items.length === 0) {
                     return res.status(400).json({ status: 400, message: "Cart is empty" });
                 }
-                // assume cart items are from single restaurant (simplification)
                 const firstProduct = await Product_1.default.findById(cart.items[0].productId);
                 if (!firstProduct)
                     return res

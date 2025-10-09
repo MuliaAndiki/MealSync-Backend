@@ -9,11 +9,14 @@ const Order_1 = __importDefault(require("../models/Order"));
 const Chair_1 = __importDefault(require("../models/Chair"));
 const auth_1 = require("../middlewares/auth");
 const mongoose_1 = __importDefault(require("mongoose"));
+const multer_1 = require("../middlewares/multer");
+const uploadsClodinary_1 = require("../utils/uploadsClodinary");
 class RestaurantController {
     constructor() {
         // POST /api/restaurant/products
         this.createProduct = [
             auth_1.verifyToken,
+            multer_1.uploadImages,
             async (req, res) => {
                 try {
                     const prodouct = req.body;
@@ -31,15 +34,25 @@ class RestaurantController {
                     if (!prodouct.name || prodouct.price == null) {
                         res.status(404).json({
                             status: 404,
-                            message: "name and price are required",
+                            message: "name and price and category are required",
                         });
                         return;
+                    }
+                    // Ilmu
+                    let documentUrl = { pictProduct: "" };
+                    const base64Data = req.body.pictProduct;
+                    if (base64Data) {
+                        const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "pictProduct", "image.png");
+                        documentUrl.pictProduct = result.secure_url;
                     }
                     const newProdouct = await Product_1.default.create({
                         name: prodouct.name,
                         price: prodouct.price,
+                        category: prodouct.category,
                         description: prodouct.description,
                         restaurantId: restaurant._id,
+                        pictProduct: documentUrl.pictProduct,
                     });
                     restaurant.products.push(newProdouct._id);
                     await newProdouct.save();
@@ -68,7 +81,7 @@ class RestaurantController {
                     if (!restaurant) {
                         res.status(404).json({
                             status: 404,
-                            message: "Restaurant",
+                            message: "Restaurant Not Found",
                         });
                         return;
                     }
@@ -114,6 +127,44 @@ class RestaurantController {
                         status: 200,
                         message: "Successfully Get Products",
                         data: product,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
+        // Get /api/restaurant/products/:_id
+        this.getProductId = [
+            auth_1.verifyToken,
+            (0, auth_1.requireRole)(["restaurant"]),
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant NotFound",
+                        });
+                        return;
+                    }
+                    const prodouct = await Product_1.default.findById(req.params._id);
+                    if (!prodouct) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "product id not found",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfilly Get Product By Id",
+                        data: prodouct,
                     });
                 }
                 catch (error) {
@@ -275,32 +326,51 @@ class RestaurantController {
             },
         ];
         // POST /api/restaurant/chair/:_id
-        this.createChair = async (req, res) => {
-            try {
-                const { restaurantId } = req.params;
-                const { noChair, status } = req.body;
-                // Pastikan restoran ada
-                const restaurant = await Restaurant_1.default.findById(restaurantId);
-                if (!restaurant) {
-                    res.status(404).json({ message: "Restaurant not found" });
-                    return;
+        this.createChair = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const { noChair, status } = req.body;
+                    const userId = req.user?._id;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: userId });
+                    if (!restaurant) {
+                        res
+                            .status(404)
+                            .json({ message: "Restaurant untuk user ini tidak ditemukan" });
+                        return;
+                    }
+                    const existingChair = await Chair_1.default.findOne({
+                        restaurantId: restaurant._id,
+                        noChair,
+                    });
+                    if (existingChair) {
+                        res.status(409).json({
+                            message: `Kursi nomor ${noChair} sudah terdaftar di restoran ini`,
+                        });
+                        return;
+                    }
+                    const newChair = new Chair_1.default({
+                        noChair,
+                        status: status || "empty",
+                        restaurantId: restaurant._id,
+                    });
+                    await newChair.save();
+                    await restaurant.save();
+                    res.status(201).json({
+                        status: 201,
+                        message: "Success Create Chair",
+                        data: newChair,
+                    });
                 }
-                // Buat kursi baru
-                const chair = new Chair_1.default({
-                    noChair,
-                    status,
-                    restaurantId,
-                });
-                await chair.save();
-                await Restaurant_1.default.findByIdAndUpdate(restaurantId, {
-                    $push: { chairId: chair._id },
-                });
-                res.status(201).json(chair);
-            }
-            catch (error) {
-                res.status(500).json({ message: "Failed to create chair", error });
-            }
-        };
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
         // GET /api/restaurant/chair
         this.getChairs = [
             auth_1.verifyToken,

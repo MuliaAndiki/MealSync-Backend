@@ -25,5 +25,6 @@ const upload = (0, multer_1.default)({
 });
 exports.uploadImages = upload.fields([
     { name: "fotoProfile", maxCount: 1 },
+    { name: "pictProduct", maxCount: 1 },
 ]);
 exports.default = upload;

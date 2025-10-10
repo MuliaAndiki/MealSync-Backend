@@ -19,5 +19,6 @@ const ProductSchema = new mongoose_1.Schema({
         ref: "Restaurant",
         required: true,
     },
+    isAvailable: { type: Boolean, default: true },
 }, { timestamps: true });
 exports.default = (0, mongoose_1.model)("Product", ProductSchema);

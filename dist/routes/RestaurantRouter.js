@@ -11,6 +11,7 @@ class RestaurantRouter {
         this.routes();
     }
     routes() {
+        this.restaurantRouter.get("/public/:uniqueUrl", RestaurantController_1.default.getByUniqueUrl);
         this.restaurantRouter.post("/products", RestaurantController_1.default.createProduct);
         this.restaurantRouter.put("/products/:_id", RestaurantController_1.default.updateProduct);
         this.restaurantRouter.get("/products", RestaurantController_1.default.getProduct);

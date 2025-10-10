@@ -8,4 +8,5 @@ export interface IOrder extends Document {
   total: number;
   status: OrderStatus;
   snapToken?: string; // midtrans token
+  chairNo?: number;
 }

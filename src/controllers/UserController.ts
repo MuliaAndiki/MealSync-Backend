@@ -3,7 +3,10 @@ import Cart from "../models/Cart";
 import Product from "../models/Product";
 import Order from "../models/Order";
 import { JwtPayload } from "../types/auth.types";
-import { verifyToken } from "../middlewares/auth";
+import { verifyToken, requireRole } from "../middlewares/auth";
+import Restaurant from "../models/Restaurant";
+import Chair from "../models/Chair";
+import { getIO } from "../utils/socket";
 
 class UserController {
   // POST /api/user/cart
@@ -152,6 +155,93 @@ class UserController {
           message: "Succesfuly Get Order",
           data: orders,
         });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    },
+  ];
+
+  // POST /api/user/order
+  public createOrder = [
+    verifyToken,
+    requireRole(["user"]),
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const user = req.user as JwtPayload;
+        const { uniqueUrl, items, chairNo } = req.body as any;
+
+        if (!uniqueUrl || !Array.isArray(items) || items.length === 0 || !chairNo) {
+          res.status(400).json({
+            status: 400,
+            message: "uniqueUrl, items[], and chairNo are required",
+          });
+          return;
+        }
+
+        const restaurant = await Restaurant.findOne({ uniqueUrl });
+        if (!restaurant) {
+          res.status(404).json({ status: 404, message: "Invalid QR / restaurant not found" });
+          return;
+        }
+
+        // Validate chair
+        const chair = await Chair.findOne({ restaurantId: restaurant._id, noChair: chairNo });
+        if (!chair) {
+          res.status(404).json({ status: 404, message: "Chair not found" });
+          return;
+        }
+        if (chair.status === "full") {
+          res.status(409).json({ status: 409, message: `Chair ${chairNo} is already taken` });
+          return;
+        }
+
+        // Validate items and availability
+        const productIds = items.map((i: any) => i.productId);
+        const products = await Product.find({ _id: { $in: productIds }, restaurantId: restaurant._id, isAvailable: true });
+        if (products.length !== items.length) {
+          res.status(400).json({ status: 400, message: "One or more products are invalid or unavailable" });
+          return;
+        }
+
+        // Build order items and total
+        const orderItems = items.map((i: any) => {
+          const p = products.find((pp) => pp._id.toString() === i.productId);
+          return {
+            productId: p!._id,
+            name: p!.name,
+            price: p!.price,
+            quantity: i.quantity,
+          };
+        });
+        const total = orderItems.reduce((sum: number, it: any) => sum + it.price * it.quantity, 0);
+
+        const order = await Order.create({
+          userId: user._id,
+          restaurantId: restaurant._id,
+          items: orderItems,
+          total,
+          status: "pending",
+          chairNo,
+        });
+
+        // Mark chair as full
+        chair.status = "full";
+        await chair.save();
+
+        // Emit events to restaurant room
+        try {
+          const io = getIO();
+          io.to(restaurant._id.toString()).emit("order:new", { order });
+          io.to(restaurant._id.toString()).emit("chair:update", { chairNo, status: "full" });
+        } catch (_) {
+          // socket not initialized; ignore
+        }
+
+        res.status(201).json({ status: 201, message: "Order created", data: order });
       } catch (error) {
         res.status(500).json({
           status: 500,

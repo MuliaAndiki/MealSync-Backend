@@ -9,6 +9,11 @@ class RestaurantRouter {
   }
 
   private routes() {
+    this.restaurantRouter.get(
+      "/public/:uniqueUrl",
+      RestaurantController.getByUniqueUrl
+    );
+
     this.restaurantRouter.post("/products", RestaurantController.createProduct);
     this.restaurantRouter.put(
       "/products/:_id",

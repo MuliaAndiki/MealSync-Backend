@@ -6,6 +6,7 @@ import { verifyToken } from "../middlewares/auth";
 import { requireRole } from "../middlewares/auth";
 import { uploadCloudinary } from "../utils/uploadsClodinary";
 import { uploadImages } from "../middlewares/multer";
+import { generateUniqueRestaurantUrl } from "../utils/slug";
 
 class SuperAdminController {
   // POST /api/superadmin/restaurant
@@ -15,15 +16,17 @@ class SuperAdminController {
     requireRole(["superadmin"]),
     async (req: Request, res: Response): Promise<any> => {
       try {
-        const { name, email, password, uniqueUrl, profile } = req.body;
+        const { name, email, password, profile } = req.body;
 
-        if (!name || !email || !password || !uniqueUrl) {
+        if (!name || !email || !password) {
           return res.status(400).json({
-            message: "Body Invalid. Mohon isi semua field wajib.",
+            message:
+              "Body Invalid. Mohon isi semua field wajib (name, email, password).",
           });
         }
 
-        // Ilmu
+        const uniqueUrl = await generateUniqueRestaurantUrl(name);
+
         let documentUrl: { logoUrl: string; banner: string; pitch: string } = {
           logoUrl: "",
           banner: "",

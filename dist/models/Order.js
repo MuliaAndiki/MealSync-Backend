@@ -27,5 +27,6 @@ const OrderSchema = new mongoose_1.Schema({
         default: "pending",
     },
     snapToken: { type: String },
+    chairNo: { type: Number },
 }, { timestamps: true });
 exports.default = (0, mongoose_1.model)("Order", OrderSchema);

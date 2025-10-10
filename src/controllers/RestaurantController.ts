@@ -11,6 +11,48 @@ import { uploadImages } from "../middlewares/multer";
 import { uploadCloudinary } from "../utils/uploadsClodinary";
 
 class RestaurantController {
+  // GET /api/restaurant/public/:uniqueUrl
+  public getByUniqueUrl = [
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const { uniqueUrl } = req.params as any;
+        const restaurant = await Restaurant.findOne({ uniqueUrl });
+        if (!restaurant) {
+          res.status(404).json({
+            status: 404,
+            message: "Invalid QR / restaurant not found",
+          });
+          return;
+        }
+        const [products, chairs] = await Promise.all([
+          Product.find({ restaurantId: restaurant._id, isAvailable: true }),
+          Chair.find({ restaurantId: restaurant._id }),
+        ]);
+
+        res.status(200).json({
+          status: 200,
+          message: "Restaurant fetched by uniqueUrl",
+          data: {
+            restaurant: {
+              _id: restaurant._id,
+              name: restaurant.name,
+              uniqueUrl: restaurant.uniqueUrl,
+              profile: restaurant.profile,
+            },
+            products,
+            chairs,
+          },
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    },
+  ];
+
   // POST /api/restaurant/products
   public createProduct = [
     verifyToken,
@@ -67,6 +109,7 @@ class RestaurantController {
           description: prodouct.description,
           restaurantId: restaurant._id,
           pictProduct: documentUrl.pictProduct,
+          isAvailable: prodouct.isAvailable ?? true,
         });
 
         restaurant.products.push(newProdouct._id);

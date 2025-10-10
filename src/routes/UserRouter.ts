@@ -13,6 +13,7 @@ class UserRouter {
     this.userRouter.put("/cart/:_id", UserController.updateCartItem);
     this.userRouter.delete("/cart/:_id", UserController.deleteCartItem);
     this.userRouter.get("/orders/history", UserController.ordersHistory);
+    this.userRouter.post("/order", UserController.createOrder);
   }
 }
 

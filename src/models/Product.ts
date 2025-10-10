@@ -20,6 +20,7 @@ const ProductSchema = new Schema<IProduct>(
       ref: "Restaurant",
       required: true,
     },
+    isAvailable: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

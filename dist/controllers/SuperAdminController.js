@@ -10,6 +10,7 @@ const auth_1 = require("../middlewares/auth");
 const auth_2 = require("../middlewares/auth");
 const uploadsClodinary_1 = require("../utils/uploadsClodinary");
 const multer_1 = require("../middlewares/multer");
+const slug_1 = require("../utils/slug");
 class SuperAdminController {
     constructor() {
         // POST /api/superadmin/restaurant
@@ -19,13 +20,13 @@ class SuperAdminController {
             (0, auth_2.requireRole)(["superadmin"]),
             async (req, res) => {
                 try {
-                    const { name, email, password, uniqueUrl, profile } = req.body;
-                    if (!name || !email || !password || !uniqueUrl) {
+                    const { name, email, password, profile } = req.body;
+                    if (!name || !email || !password) {
                         return res.status(400).json({
-                            message: "Body Invalid. Mohon isi semua field wajib.",
+                            message: "Body Invalid. Mohon isi semua field wajib (name, email, password).",
                         });
                     }
-                    // Ilmu
+                    const uniqueUrl = await (0, slug_1.generateUniqueRestaurantUrl)(name);
                     let documentUrl = {
                         logoUrl: "",
                         banner: "",

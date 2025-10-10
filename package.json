@@ -16,6 +16,7 @@
     "midtrans-client": "^1.4.3",
     "mongoose": "^8.15.0",
     "multer": "^2.0.2",
+    "socket.io": "^4.8.1",
     "zod": "^4.1.9"
   },
   "devDependencies": {

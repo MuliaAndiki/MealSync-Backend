@@ -7,6 +7,9 @@ const Cart_1 = __importDefault(require("../models/Cart"));
 const Product_1 = __importDefault(require("../models/Product"));
 const Order_1 = __importDefault(require("../models/Order"));
 const auth_1 = require("../middlewares/auth");
+const Restaurant_1 = __importDefault(require("../models/Restaurant"));
+const Chair_1 = __importDefault(require("../models/Chair"));
+const socket_1 = require("../utils/socket");
 class UserController {
     constructor() {
         // POST /api/user/cart
@@ -150,6 +153,85 @@ class UserController {
                         message: "Succesfuly Get Order",
                         data: orders,
                     });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
+        // POST /api/user/order
+        this.createOrder = [
+            auth_1.verifyToken,
+            (0, auth_1.requireRole)(["user"]),
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const { uniqueUrl, items, chairNo } = req.body;
+                    if (!uniqueUrl || !Array.isArray(items) || items.length === 0 || !chairNo) {
+                        res.status(400).json({
+                            status: 400,
+                            message: "uniqueUrl, items[], and chairNo are required",
+                        });
+                        return;
+                    }
+                    const restaurant = await Restaurant_1.default.findOne({ uniqueUrl });
+                    if (!restaurant) {
+                        res.status(404).json({ status: 404, message: "Invalid QR / restaurant not found" });
+                        return;
+                    }
+                    // Validate chair
+                    const chair = await Chair_1.default.findOne({ restaurantId: restaurant._id, noChair: chairNo });
+                    if (!chair) {
+                        res.status(404).json({ status: 404, message: "Chair not found" });
+                        return;
+                    }
+                    if (chair.status === "full") {
+                        res.status(409).json({ status: 409, message: `Chair ${chairNo} is already taken` });
+                        return;
+                    }
+                    // Validate items and availability
+                    const productIds = items.map((i) => i.productId);
+                    const products = await Product_1.default.find({ _id: { $in: productIds }, restaurantId: restaurant._id, isAvailable: true });
+                    if (products.length !== items.length) {
+                        res.status(400).json({ status: 400, message: "One or more products are invalid or unavailable" });
+                        return;
+                    }
+                    // Build order items and total
+                    const orderItems = items.map((i) => {
+                        const p = products.find((pp) => pp._id.toString() === i.productId);
+                        return {
+                            productId: p._id,
+                            name: p.name,
+                            price: p.price,
+                            quantity: i.quantity,
+                        };
+                    });
+                    const total = orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
+                    const order = await Order_1.default.create({
+                        userId: user._id,
+                        restaurantId: restaurant._id,
+                        items: orderItems,
+                        total,
+                        status: "pending",
+                        chairNo,
+                    });
+                    // Mark chair as full
+                    chair.status = "full";
+                    await chair.save();
+                    // Emit events to restaurant room
+                    try {
+                        const io = (0, socket_1.getIO)();
+                        io.to(restaurant._id.toString()).emit("order:new", { order });
+                        io.to(restaurant._id.toString()).emit("chair:update", { chairNo, status: "full" });
+                    }
+                    catch (_) {
+                        // socket not initialized; ignore
+                    }
+                    res.status(201).json({ status: 201, message: "Order created", data: order });
                 }
                 catch (error) {
                     res.status(500).json({

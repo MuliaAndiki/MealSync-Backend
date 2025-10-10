@@ -7,9 +7,10 @@ export interface IProduct extends Document {
   description?: string;
   category: string;
   restaurantId: Types.ObjectId;
+  isAvailable?: boolean;
 }
 
 export type CreateProduct = Pick<
   IProduct,
-  "name" | "price" | "description" | "category" | "pictProduct"
+  "name" | "price" | "description" | "category" | "pictProduct" | "isAvailable"
 >;

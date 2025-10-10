@@ -15,6 +15,7 @@ class UserRouter {
         this.userRouter.put("/cart/:_id", UserController_1.default.updateCartItem);
         this.userRouter.delete("/cart/:_id", UserController_1.default.deleteCartItem);
         this.userRouter.get("/orders/history", UserController_1.default.ordersHistory);
+        this.userRouter.post("/order", UserController_1.default.createOrder);
     }
 }
 exports.default = new UserRouter().userRouter;

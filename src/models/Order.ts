@@ -28,6 +28,7 @@ const OrderSchema = new Schema<IOrder>(
       default: "pending",
     },
     snapToken: { type: String },
+    chairNo: { type: Number },
   },
   { timestamps: true }
 );

@@ -69,8 +69,6 @@ export const verifyToken = (
 
 export const requireRole = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    console.log("DEBUG: requireRole - req.user:", req.user);
-    console.log("DEBUG: requireRole - Required roles:", roles);
     if (!req.user || !roles.includes(req.user.role)) {
       res.status(403).json({ message: "Akses ditolak. Role tidak sesuai." });
       return;

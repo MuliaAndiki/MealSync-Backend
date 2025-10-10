@@ -37,18 +37,29 @@ class RestaurantController {
           return;
         }
 
-        // Ilmu
         let documentUrl: { pictProduct: string } = { pictProduct: "" };
-        const base64Data = req.body.pictProduct;
-        if (base64Data) {
-          const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+        if (req.files && (req.files as any).pictProduct?.[0]) {
+          const file = (req.files as any).pictProduct[0];
+          const buffer = file.buffer;
+
           const result = await uploadCloudinary(
             buffer,
             "pictProduct",
+            file.originalname
+          );
+          documentUrl.pictProduct = result.secure_url;
+        } else if (req.body.pictProduct) {
+          const base64Data = req.body.pictProduct;
+          const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+
+          const result = await uploadCloudinary(
+            buffer,
+            "logoRestaurant",
             "image.png"
           );
           documentUrl.pictProduct = result.secure_url;
         }
+
         const newProdouct = await Product.create({
           name: prodouct.name,
           price: prodouct.price,
@@ -347,20 +358,20 @@ class RestaurantController {
     },
   ];
 
-  // POST /api/restaurant/chair/:_id
+  // POST /api/restaurant/chair
   public createChair = [
     verifyToken,
-
     async (req: Request, res: Response): Promise<void> => {
       try {
         const { noChair, status } = req.body;
-        const userId = req.user?._id;
+        const user = req.user as JwtPayload;
+        const userId = user._id;
 
         const restaurant = await Restaurant.findOne({ ownerAuthId: userId });
         if (!restaurant) {
-          res
-            .status(404)
-            .json({ message: "Restaurant untuk user ini tidak ditemukan" });
+          res.status(404).json({
+            message: "Restaurant untuk user ini tidak ditemukan",
+          });
           return;
         }
 
@@ -380,8 +391,9 @@ class RestaurantController {
           status: status || "empty",
           restaurantId: restaurant._id,
         });
-
         await newChair.save();
+
+        restaurant.chairId.push(newChair._id);
         await restaurant.save();
 
         res.status(201).json({
@@ -483,35 +495,77 @@ class RestaurantController {
     async (req: Request, res: Response): Promise<void> => {
       try {
         const user = req.user as JwtPayload;
-
-        const restaurant = await Restaurant.findOne({
-          ownerAuthId: new mongoose.Types.ObjectId(user._id),
-        });
-
+        const restaurant = await Restaurant.findOne({ ownerAuthId: user._id });
         if (!restaurant) {
-          res
-            .status(404)
-            .json({ status: 404, message: "Restaurant Not Found" });
+          res.status(404).json({
+            status: 404,
+            message: "Restaurant not found.",
+          });
           return;
         }
 
-        const chair = await Chair.findOneAndDelete({
-          _id: req.params.id,
+        const chair = await Chair.findOne({
+          _id: req.params._id,
           restaurantId: restaurant._id,
         });
 
         if (!chair) {
-          res.status(404).json({ status: 404, message: "Chair Not Found" });
+          res.status(404).json({
+            status: 404,
+            message: "Chair not found or does not belong to this restaurant.",
+          });
           return;
         }
 
+        await Chair.findByIdAndDelete(chair._id);
         await Restaurant.findByIdAndUpdate(restaurant._id, {
-          $pull: { chairId: req.params.id },
+          $pull: { chairId: chair._id },
         });
 
         res.status(200).json({
           status: 200,
-          message: "Successfully Delete Chair",
+          message: "Successfully deleted chair.",
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    },
+  ];
+
+  public getProfileRestaurant = [
+    verifyToken,
+    requireRole(["restaurant"]),
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const user = req.user as JwtPayload;
+        const userId = user._id;
+
+        const restaurant = await Restaurant.findOne({ ownerAuthId: userId });
+        if (!restaurant) {
+          res.status(404).json({
+            status: 404,
+            message: "Profil restoran tidak ditemukan untuk akun ini.",
+          });
+          return;
+        }
+
+        const [products, chairs] = await Promise.all([
+          Product.find({ restaurantId: restaurant._id }),
+          Chair.find({ restaurantId: restaurant._id }),
+        ]);
+
+        res.status(200).json({
+          status: 200,
+          message: "Berhasil mengambil profil restoran.",
+          data: {
+            ...restaurant.toObject(),
+            products,
+            chairs,
+          },
         });
       } catch (error) {
         res.status(500).json({

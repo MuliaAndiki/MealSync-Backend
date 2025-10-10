@@ -126,6 +126,7 @@ class AuthController {
         });
         return;
       }
+
       jwt.sign(
         payload,
         process.env.JWT_SECRET,

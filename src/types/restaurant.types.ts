@@ -5,30 +5,20 @@ export interface IRestaurant extends Document {
   email: string;
   uniqueUrl: string;
   password?: string;
+  vocher: string;
   profile?: {
     address?: string;
     description?: string;
     logoUrl?: string;
+    banner?: string;
+    pitch?: string;
   };
   products: Types.ObjectId[];
   ownerAuthId: Types.ObjectId;
-  chairId: Types.ObjectId;
+  chairId: Types.ObjectId[];
 }
 
 export type PickRestaurantPayload = Pick<
   IRestaurant,
   "_id" | "name" | "email" | "uniqueUrl" | "profile"
 >;
-
-//
-export type CreateRestaurantBody = {
-  name: string;
-  email: string;
-  uniqueUrl: string;
-  profile?: {
-    address?: string;
-    description?: string;
-    logoUrl?: string;
-  };
-  password: string;
-};

@@ -7,51 +7,99 @@ const Auth_1 = __importDefault(require("../models/Auth"));
 const Restaurant_1 = __importDefault(require("../models/Restaurant"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const auth_1 = require("../middlewares/auth");
+const auth_2 = require("../middlewares/auth");
+const uploadsClodinary_1 = require("../utils/uploadsClodinary");
+const multer_1 = require("../middlewares/multer");
 class SuperAdminController {
     constructor() {
         // POST /api/superadmin/restaurant
         this.createRestaurant = [
             auth_1.verifyToken,
+            multer_1.uploadImages,
+            (0, auth_2.requireRole)(["superadmin"]),
             async (req, res) => {
                 try {
                     const { name, email, password, uniqueUrl, profile } = req.body;
                     if (!name || !email || !password || !uniqueUrl) {
-                        res.status(400).json({
-                            status: 400,
-                            message: "Body Invalid",
-                        });
-                        return;
-                    }
-                    const existingUser = await Auth_1.default.findOne({ email });
-                    const existingRest = await Restaurant_1.default.findOne({
-                        $or: [{ email }, { uniqueUrl }],
-                    });
-                    if (existingUser || existingRest) {
                         return res.status(400).json({
-                            status: 400,
-                            message: "Email or URL already used",
+                            message: "Body Invalid. Mohon isi semua field wajib.",
                         });
+                    }
+                    // Ilmu
+                    let documentUrl = {
+                        logoUrl: "",
+                        banner: "",
+                        pitch: "",
+                    };
+                    if (req.files && req.files.logoRestaurant?.[0]) {
+                        const file = req.files.logoRestaurant[0];
+                        const buffer = file.buffer;
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "logoRestaurant", file.originalname);
+                        documentUrl.logoUrl = result.secure_url;
+                    }
+                    else if (req.body.logoRestaurant) {
+                        const base64Data = req.body.logoRestaurant;
+                        const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "logoRestaurant", "image.png");
+                        documentUrl.logoUrl = result.secure_url;
+                    }
+                    if (req.files && req.files.bannerRestaurant?.[0]) {
+                        const file = req.files.bannerRestaurant[0];
+                        const buffer = file.buffer;
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "bannerRestaurant", file.originalname);
+                        documentUrl.banner = result.secure_url;
+                    }
+                    else if (req.body.bannerRestaurant) {
+                        const base64Data = req.body.bannerRestaurant;
+                        const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "bannerRestaurant", "image.png");
+                        documentUrl.banner = result.secure_url;
+                    }
+                    if (req.files && req.files.pitchRestaurant?.[0]) {
+                        const file = req.files.pitchRestaurant[0];
+                        const buffer = file.buffer;
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "pitchRestaurant", file.originalname);
+                        documentUrl.pitch = result.secure_url;
+                    }
+                    else if (req.body.pitchRestaurant) {
+                        const base64Data = req.body.pitchRestaurant;
+                        const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "pitchRestaurant", "image.png");
+                        documentUrl.pitch = result.secure_url;
                     }
                     const hash = await bcryptjs_1.default.hash(password, 10);
-                    const user = await Auth_1.default.create({
+                    const restaurantAuth = await Auth_1.default.create({
                         email,
                         fullName: name,
                         password: hash,
                         role: "restaurant",
                     });
+                    const finalProfile = {
+                        ...profile,
+                        logoUrl: documentUrl.logoUrl || profile?.logoUrl || "",
+                        banner: documentUrl.banner || profile?.banner || "",
+                        pitch: documentUrl.pitch || profile.pitch || "",
+                    };
                     const restaurant = await Restaurant_1.default.create({
                         name,
                         email,
                         uniqueUrl,
-                        profile,
+                        profile: finalProfile,
                         products: [],
-                        ownerAuthId: user._id,
+                        chairId: [],
+                        ownerAuthId: restaurantAuth._id,
+                        createdBy: req.user?._id,
                     });
-                    const newRestaurant = restaurant;
                     res.status(201).json({
-                        status: 201,
-                        message: "Succesfully Create Restaurant",
-                        data: newRestaurant,
+                        message: "Restaurant created successfully",
+                        data: {
+                            restaurant,
+                            account: {
+                                email: restaurantAuth.email,
+                                password,
+                                role: restaurantAuth.role,
+                            },
+                        },
                     });
                 }
                 catch (error) {
@@ -60,7 +108,6 @@ class SuperAdminController {
                         message: "Server Internal Error",
                         error: error instanceof Error ? error.message : error,
                     });
-                    return;
                 }
             },
         ];

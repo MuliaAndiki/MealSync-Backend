@@ -38,12 +38,17 @@ class RestaurantController {
                         });
                         return;
                     }
-                    // Ilmu
                     let documentUrl = { pictProduct: "" };
-                    const base64Data = req.body.pictProduct;
-                    if (base64Data) {
+                    if (req.files && req.files.pictProduct?.[0]) {
+                        const file = req.files.pictProduct[0];
+                        const buffer = file.buffer;
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "pictProduct", file.originalname);
+                        documentUrl.pictProduct = result.secure_url;
+                    }
+                    else if (req.body.pictProduct) {
+                        const base64Data = req.body.pictProduct;
                         const buffer = Buffer.from(base64Data.split(",")[1], "base64");
-                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "pictProduct", "image.png");
+                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "logoRestaurant", "image.png");
                         documentUrl.pictProduct = result.secure_url;
                     }
                     const newProdouct = await Product_1.default.create({
@@ -325,18 +330,19 @@ class RestaurantController {
                 }
             },
         ];
-        // POST /api/restaurant/chair/:_id
+        // POST /api/restaurant/chair
         this.createChair = [
             auth_1.verifyToken,
             async (req, res) => {
                 try {
                     const { noChair, status } = req.body;
-                    const userId = req.user?._id;
+                    const user = req.user;
+                    const userId = user._id;
                     const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: userId });
                     if (!restaurant) {
-                        res
-                            .status(404)
-                            .json({ message: "Restaurant untuk user ini tidak ditemukan" });
+                        res.status(404).json({
+                            message: "Restaurant untuk user ini tidak ditemukan",
+                        });
                         return;
                     }
                     const existingChair = await Chair_1.default.findOne({
@@ -355,6 +361,7 @@ class RestaurantController {
                         restaurantId: restaurant._id,
                     });
                     await newChair.save();
+                    restaurant.chairId.push(newChair._id);
                     await restaurant.save();
                     res.status(201).json({
                         status: 201,
@@ -443,29 +450,70 @@ class RestaurantController {
             async (req, res) => {
                 try {
                     const user = req.user;
-                    const restaurant = await Restaurant_1.default.findOne({
-                        ownerAuthId: new mongoose_1.default.Types.ObjectId(user._id),
-                    });
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
                     if (!restaurant) {
-                        res
-                            .status(404)
-                            .json({ status: 404, message: "Restaurant Not Found" });
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant not found.",
+                        });
                         return;
                     }
-                    const chair = await Chair_1.default.findOneAndDelete({
-                        _id: req.params.id,
+                    const chair = await Chair_1.default.findOne({
+                        _id: req.params._id,
                         restaurantId: restaurant._id,
                     });
                     if (!chair) {
-                        res.status(404).json({ status: 404, message: "Chair Not Found" });
+                        res.status(404).json({
+                            status: 404,
+                            message: "Chair not found or does not belong to this restaurant.",
+                        });
                         return;
                     }
+                    await Chair_1.default.findByIdAndDelete(chair._id);
                     await Restaurant_1.default.findByIdAndUpdate(restaurant._id, {
-                        $pull: { chairId: req.params.id },
+                        $pull: { chairId: chair._id },
                     });
                     res.status(200).json({
                         status: 200,
-                        message: "Successfully Delete Chair",
+                        message: "Successfully deleted chair.",
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
+        this.getProfileRestaurant = [
+            auth_1.verifyToken,
+            (0, auth_1.requireRole)(["restaurant"]),
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const userId = user._id;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: userId });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Profil restoran tidak ditemukan untuk akun ini.",
+                        });
+                        return;
+                    }
+                    const [products, chairs] = await Promise.all([
+                        Product_1.default.find({ restaurantId: restaurant._id }),
+                        Chair_1.default.find({ restaurantId: restaurant._id }),
+                    ]);
+                    res.status(200).json({
+                        status: 200,
+                        message: "Berhasil mengambil profil restoran.",
+                        data: {
+                            ...restaurant.toObject(),
+                            products,
+                            chairs,
+                        },
                     });
                 }
                 catch (error) {

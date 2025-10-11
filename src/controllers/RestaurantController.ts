@@ -581,19 +581,40 @@ class RestaurantController {
 
   public getProfileRestaurant = [
     verifyToken,
-    requireRole(["restaurant"]),
+    requireRole(["restaurant", "user"]),
     async (req: Request, res: Response): Promise<void> => {
       try {
         const user = req.user as JwtPayload;
         const userId = user._id;
+        const { uniqueUrl } = req.params;
 
-        const restaurant = await Restaurant.findOne({ ownerAuthId: userId });
-        if (!restaurant) {
-          res.status(404).json({
-            status: 404,
-            message: "Profil restoran tidak ditemukan untuk akun ini.",
-          });
-          return;
+        let restaurant;
+
+        if (user.role === "restaurant") {
+          restaurant = await Restaurant.findOne({ ownerAuthId: userId });
+          if (!restaurant) {
+            res.status(404).json({
+              status: 404,
+              message: "Profil restoran tidak ditemukan untuk akun ini.",
+            });
+            return;
+          }
+        } else {
+          if (!uniqueUrl) {
+            res.status(400).json({
+              status: 400,
+              message: "UniqueUrl restoran wajib untuk user biasa.",
+            });
+            return;
+          }
+          restaurant = await Restaurant.findOne({ uniqueUrl: uniqueUrl });
+          if (!restaurant) {
+            res.status(404).json({
+              status: 404,
+              message: "Restoran tidak ditemukan.",
+            });
+            return;
+          }
         }
 
         const [products, chairs] = await Promise.all([
@@ -608,6 +629,8 @@ class RestaurantController {
             ...restaurant.toObject(),
             products,
             chairs,
+            ownerId: restaurant.ownerAuthId,
+            restaurantId: restaurant._id,
           },
         });
       } catch (error) {

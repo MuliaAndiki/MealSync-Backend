@@ -11,6 +11,7 @@ const auth_2 = require("../middlewares/auth");
 const uploadsClodinary_1 = require("../utils/uploadsClodinary");
 const multer_1 = require("../middlewares/multer");
 const slug_1 = require("../utils/slug");
+const qrcode_1 = __importDefault(require("qrcode"));
 class SuperAdminController {
     constructor() {
         // POST /api/superadmin/restaurant
@@ -75,6 +76,8 @@ class SuperAdminController {
                         password: hash,
                         role: "restaurant",
                     });
+                    const fullUrl = `http://localhost:3000/user/dashboard/restaurant/${uniqueUrl}`;
+                    const qrDataUrl = await qrcode_1.default.toDataURL(fullUrl);
                     const finalProfile = {
                         ...profile,
                         logoUrl: documentUrl.logoUrl || profile?.logoUrl || "",
@@ -100,6 +103,8 @@ class SuperAdminController {
                                 password,
                                 role: restaurantAuth.role,
                             },
+                            fullUrl,
+                            qrCode: qrDataUrl,
                         },
                     });
                 }

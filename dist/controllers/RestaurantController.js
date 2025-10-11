@@ -531,18 +531,39 @@ class RestaurantController {
         ];
         this.getProfileRestaurant = [
             auth_1.verifyToken,
-            (0, auth_1.requireRole)(["restaurant"]),
+            (0, auth_1.requireRole)(["restaurant", "user"]),
             async (req, res) => {
                 try {
                     const user = req.user;
                     const userId = user._id;
-                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: userId });
-                    if (!restaurant) {
-                        res.status(404).json({
-                            status: 404,
-                            message: "Profil restoran tidak ditemukan untuk akun ini.",
-                        });
-                        return;
+                    const { uniqueUrl } = req.params;
+                    let restaurant;
+                    if (user.role === "restaurant") {
+                        restaurant = await Restaurant_1.default.findOne({ ownerAuthId: userId });
+                        if (!restaurant) {
+                            res.status(404).json({
+                                status: 404,
+                                message: "Profil restoran tidak ditemukan untuk akun ini.",
+                            });
+                            return;
+                        }
+                    }
+                    else {
+                        if (!uniqueUrl) {
+                            res.status(400).json({
+                                status: 400,
+                                message: "UniqueUrl restoran wajib untuk user biasa.",
+                            });
+                            return;
+                        }
+                        restaurant = await Restaurant_1.default.findOne({ uniqueUrl: uniqueUrl });
+                        if (!restaurant) {
+                            res.status(404).json({
+                                status: 404,
+                                message: "Restoran tidak ditemukan.",
+                            });
+                            return;
+                        }
                     }
                     const [products, chairs] = await Promise.all([
                         Product_1.default.find({ restaurantId: restaurant._id }),
@@ -555,6 +576,8 @@ class RestaurantController {
                             ...restaurant.toObject(),
                             products,
                             chairs,
+                            ownerId: restaurant.ownerAuthId,
+                            restaurantId: restaurant._id,
                         },
                     });
                 }

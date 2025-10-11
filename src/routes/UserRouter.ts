@@ -9,9 +9,11 @@ class UserRouter {
   }
 
   private routes() {
-    this.userRouter.post("/", UserController.AddToCart);
+    this.userRouter.post("/cart/:productId", UserController.AddToCart);
+    this.userRouter.get("/cart", UserController.getCart);
     this.userRouter.put("/cart/:_id", UserController.updateCartItem);
     this.userRouter.delete("/cart/:_id", UserController.deleteCartItem);
+    this.userRouter.delete("/cart", UserController.deleteAllCartItem);
     this.userRouter.get("/orders/history", UserController.ordersHistory);
     this.userRouter.post("/order", UserController.createOrder);
   }

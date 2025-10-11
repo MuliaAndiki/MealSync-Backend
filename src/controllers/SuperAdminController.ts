@@ -7,6 +7,7 @@ import { requireRole } from "../middlewares/auth";
 import { uploadCloudinary } from "../utils/uploadsClodinary";
 import { uploadImages } from "../middlewares/multer";
 import { generateUniqueRestaurantUrl } from "../utils/slug";
+import QRCode from "qrcode";
 
 class SuperAdminController {
   // POST /api/superadmin/restaurant
@@ -106,6 +107,8 @@ class SuperAdminController {
           password: hash,
           role: "restaurant",
         });
+        const fullUrl = `http://localhost:3000/user/dashboard/restaurant/${uniqueUrl}`;
+        const qrDataUrl = await QRCode.toDataURL(fullUrl);
 
         const finalProfile = {
           ...profile,
@@ -134,6 +137,8 @@ class SuperAdminController {
               password,
               role: restaurantAuth.role,
             },
+            fullUrl,
+            qrCode: qrDataUrl,
           },
         });
       } catch (error) {

@@ -40,6 +40,12 @@ class RestaurantRouter {
       "/profile",
       RestaurantController.getProfileRestaurant
     );
+    // not used
+    this.restaurantRouter.get(
+      "/profile/:uniqueUrl",
+      RestaurantController.getProfileRestaurant
+    );
+
     this.restaurantRouter.delete(
       "/chair/:_id",
       RestaurantController.deleteChair

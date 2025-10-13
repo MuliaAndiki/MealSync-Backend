@@ -256,7 +256,7 @@ class UserController {
         // POST /api/user/order
         this.createOrder = [
             auth_1.verifyToken,
-            (0, auth_1.requireRole)(["user"]),
+            (0, auth_1.requireRole)(["user", "restaurant"]),
             async (req, res) => {
                 try {
                     const user = req.user;
@@ -279,7 +279,6 @@ class UserController {
                         });
                         return;
                     }
-                    // Validate chair
                     const chair = await Chair_1.default.findOne({
                         restaurantId: restaurant._id,
                         noChair: chairNo,
@@ -339,11 +338,83 @@ class UserController {
                         });
                     }
                     catch (_) {
-                        // socket not initialized; ignore
+                        // do nothing
                     }
                     res
                         .status(201)
                         .json({ status: 201, message: "Order created", data: order });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
+        // GET /api/user/orders
+        this.getOrdersUserRestaurant = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const orders = await Order_1.default.find({
+                        userId: user._id,
+                        status: { $in: ["pending", "paid"] },
+                    }).sort({ createdAt: -1 });
+                    if (!orders) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Order Not Found",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfuly Get Orders",
+                        data: orders,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
+        // GET /api/user/order/:id
+        this.getOrderById = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const { orderId } = req.params;
+                    if (!orderId) {
+                        res.status(400).json({
+                            status: 400,
+                            message: "Order Id Tidak Ditemukan",
+                        });
+                        return;
+                    }
+                    const order = await Order_1.default.findOne({
+                        _id: orderId,
+                        userId: user._id,
+                    });
+                    if (!order) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Order Not Found",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfuly Get Order",
+                        data: order,
+                    });
                 }
                 catch (error) {
                     res.status(500).json({

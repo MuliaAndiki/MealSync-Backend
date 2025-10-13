@@ -40,7 +40,7 @@ class RestaurantRouter {
       "/profile",
       RestaurantController.getProfileRestaurant
     );
-    // not used
+
     this.restaurantRouter.get(
       "/profile/:uniqueUrl",
       RestaurantController.getProfileRestaurant

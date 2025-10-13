@@ -273,7 +273,7 @@ class UserController {
   // POST /api/user/order
   public createOrder = [
     verifyToken,
-    requireRole(["user"]),
+    requireRole(["user", "restaurant"]),
     async (req: Request, res: Response): Promise<void> => {
       try {
         const user = req.user as JwtPayload;
@@ -301,7 +301,6 @@ class UserController {
           return;
         }
 
-        // Validate chair
         const chair = await Chair.findOne({
           restaurantId: restaurant._id,
           noChair: chairNo,
@@ -368,12 +367,84 @@ class UserController {
             status: "full",
           });
         } catch (_) {
-          // socket not initialized; ignore
+          // do nothing
         }
 
         res
           .status(201)
           .json({ status: 201, message: "Order created", data: order });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    },
+  ];
+
+  // GET /api/user/orders
+  public getOrdersUserRestaurant = [
+    verifyToken,
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const user = req.user as JwtPayload;
+        const orders = await Order.find({
+          userId: user._id,
+          status: { $in: ["pending", "paid"] },
+        }).sort({ createdAt: -1 });
+        if (!orders) {
+          res.status(404).json({
+            status: 404,
+            message: "Order Not Found",
+          });
+          return;
+        }
+        res.status(200).json({
+          status: 200,
+          message: "Succesfuly Get Orders",
+          data: orders,
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    },
+  ];
+
+  // GET /api/user/order/:id
+  public getOrderById = [
+    verifyToken,
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const user = req.user as JwtPayload;
+        const { orderId } = req.params;
+        if (!orderId) {
+          res.status(400).json({
+            status: 400,
+            message: "Order Id Tidak Ditemukan",
+          });
+          return;
+        }
+        const order = await Order.findOne({
+          _id: orderId,
+          userId: user._id,
+        });
+        if (!order) {
+          res.status(404).json({
+            status: 404,
+            message: "Order Not Found",
+          });
+          return;
+        }
+        res.status(200).json({
+          status: 200,
+          message: "Succesfuly Get Order",
+          data: order,
+        });
       } catch (error) {
         res.status(500).json({
           status: 500,

@@ -590,6 +590,44 @@ class RestaurantController {
                 }
             },
         ];
+        // PUT /api/restaurant/orders/done/:_id
+        this.doneOrder = [
+            auth_1.verifyToken,
+            (0, auth_1.requireRole)(["restaurant"]),
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
+                    if (!restaurant) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Restaurant NotFound",
+                        });
+                        return;
+                    }
+                    const order = await Order_1.default.findOneAndUpdate({ _id: req.params._id, restaurantId: restaurant._id }, { status: "done" }, { new: true });
+                    if (!order) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Order Not Found",
+                        });
+                        return;
+                    }
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfully Order done",
+                        data: order,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
     }
 }
 exports.default = new RestaurantController();

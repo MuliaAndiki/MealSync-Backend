@@ -33,6 +33,8 @@ class RestaurantRouter {
       "/orders/history",
       RestaurantController.ordersHistory
     );
+    this.restaurantRouter.put("/orders/:_id", RestaurantController.doneOrder);
+
     this.restaurantRouter.put("/profile", RestaurantController.updateProfile);
     this.restaurantRouter.post("/chair", RestaurantController.createChair);
     this.restaurantRouter.get("/chair", RestaurantController.getChairs);

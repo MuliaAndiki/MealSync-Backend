@@ -294,7 +294,6 @@ class UserController {
                         });
                         return;
                     }
-                    // Validate items and availability
                     const productIds = items.map((i) => i.productId);
                     const products = await Product_1.default.find({
                         _id: { $in: productIds },
@@ -308,7 +307,6 @@ class UserController {
                         });
                         return;
                     }
-                    // Build order items and total
                     const orderItems = items.map((i) => {
                         const p = products.find((pp) => pp._id.toString() === i.productId);
                         return {
@@ -327,6 +325,7 @@ class UserController {
                         status: "pending",
                         chairNo,
                     });
+                    await Cart_1.default.findOneAndUpdate({ userId: user._id }, { items: [], total: 0 });
                     chair.status = "full";
                     await chair.save();
                     try {
@@ -413,6 +412,55 @@ class UserController {
                     res.status(200).json({
                         status: 200,
                         message: "Succesfuly Get Order",
+                        data: order,
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
+        // DELETE /api/user/order/cancel/:orderId
+        this.cancelOrder = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const { orderId } = req.params;
+                    if (!orderId) {
+                        res.status(400).json({
+                            status: 400,
+                            message: "Order Id is Required",
+                        });
+                        return;
+                    }
+                    const order = await Order_1.default.findOne({
+                        _id: orderId,
+                        userId: user._id,
+                    });
+                    if (!order) {
+                        res.status(404).json({
+                            status: 404,
+                            message: "Order Not Found",
+                        });
+                        return;
+                    }
+                    if (order.status !== "pending") {
+                        res.status(409).json({
+                            status: 409,
+                            message: "Only Pending Order can be Canceled",
+                        });
+                        return;
+                    }
+                    order.status = "failed";
+                    await order.save();
+                    res.status(200).json({
+                        status: 200,
+                        message: "Succesfuly Cancel Order",
                         data: order,
                     });
                 }

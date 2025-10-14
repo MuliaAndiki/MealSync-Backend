@@ -20,6 +20,7 @@ class UserRouter {
         this.userRouter.post("/order", UserController_1.default.createOrder);
         this.userRouter.get("/order/:_id", UserController_1.default.getOrderById);
         this.userRouter.get("/orders", UserController_1.default.getOrdersUserRestaurant);
+        this.userRouter.delete("/order/:orderId", UserController_1.default.cancelOrder);
     }
 }
 exports.default = new UserRouter().userRouter;

@@ -18,6 +18,7 @@ class UserRouter {
     this.userRouter.post("/order", UserController.createOrder);
     this.userRouter.get("/order/:_id", UserController.getOrderById);
     this.userRouter.get("/orders", UserController.getOrdersUserRestaurant);
+    this.userRouter.delete("/order/:orderId", UserController.cancelOrder);
   }
 }
 

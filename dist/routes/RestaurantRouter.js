@@ -19,6 +19,7 @@ class RestaurantRouter {
         this.restaurantRouter.delete("/products/:_id", RestaurantController_1.default.deleteProduct);
         this.restaurantRouter.get("/orders", RestaurantController_1.default.listOrders);
         this.restaurantRouter.get("/orders/history", RestaurantController_1.default.ordersHistory);
+        this.restaurantRouter.put("/orders/:_id", RestaurantController_1.default.doneOrder);
         this.restaurantRouter.put("/profile", RestaurantController_1.default.updateProfile);
         this.restaurantRouter.post("/chair", RestaurantController_1.default.createChair);
         this.restaurantRouter.get("/chair", RestaurantController_1.default.getChairs);

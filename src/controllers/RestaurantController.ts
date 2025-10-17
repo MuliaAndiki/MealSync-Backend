@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import Product from "../models/Product";
 import Restaurant from "../models/Restaurant";
 import Order from "../models/Order";
@@ -9,6 +9,7 @@ import { CreateProduct } from "../types/product.types";
 import mongoose from "mongoose";
 import { uploadImages } from "../middlewares/multer";
 import { uploadCloudinary } from "../utils/uploadsClodinary";
+import { handleUpload } from "../utils/handlerUploads";
 
 class RestaurantController {
   // GET /api/restaurant/public/:uniqueUrl
@@ -329,6 +330,7 @@ class RestaurantController {
   // GET /api/restaurant/orders/history
   public ordersHistory = [
     verifyToken,
+    uploadImages,
     async (req: Request, res: Response): Promise<any> => {
       try {
         const user = req.user as JwtPayload;
@@ -340,6 +342,7 @@ class RestaurantController {
           });
           return;
         }
+
         const orders = await Order.find({
           restaurantId: restaurant._id,
           status: { $in: ["paid", "failed"] },
@@ -368,33 +371,70 @@ class RestaurantController {
   ];
 
   // PUT /api/restaurant/profile
-  public updateProfile = [
+  // Min Intergrate
+  public updateProfile: RequestHandler[] = [
     verifyToken,
     async (req: Request, res: Response): Promise<any> => {
       try {
         const user = req.user as JwtPayload;
-        const restaurant = await Restaurant.findOneAndUpdate(
+
+        const restaurant = await Restaurant.findOne({ ownerAuthId: user._id });
+        if (!restaurant) {
+          return res.status(404).json({
+            status: 404,
+            message: "Restaurant not found",
+          });
+        }
+
+        let documentUrl: {
+          logoUrl?: string;
+          banner?: string;
+          pitch?: string;
+        } = { banner: "", logoUrl: "", pitch: "" };
+
+        const files = req.files as
+          | Record<string, Express.Multer.File[]>
+          | undefined;
+        documentUrl.logoUrl = await handleUpload(
+          files?.logoRestaurant?.[0],
+          req.body.logoRestaurant,
+          "logoRestaurant"
+        );
+        documentUrl.banner = await handleUpload(
+          files?.bannerRestaurant?.[0],
+          req.body.bannerRestaurant,
+          "bannerRestaurant"
+        );
+        documentUrl.pitch = await handleUpload(
+          files?.pitchRestaurant?.[0],
+          req.body.pitchRestaurant,
+          "pitchRestaurant"
+        );
+
+        const updatedData = {
+          ...req.body,
+          ...(documentUrl.logoUrl && { logoUrl: documentUrl.logoUrl }),
+          ...(documentUrl.banner && { banner: documentUrl.banner }),
+          ...(documentUrl.pitch && { pitch: documentUrl.pitch }),
+        };
+
+        // Update data restoran
+        const updatedRestaurant = await Restaurant.findOneAndUpdate(
           { ownerAuthId: user._id },
-          { $set: req.body },
+          { $set: updatedData },
           { new: true }
         );
 
-        if (!restaurant) {
-          res.status(404).json({
-            status: 404,
-            message: "Restaurant NotFound",
-          });
-          return;
-        }
-        res.status(200).json({
+        return res.status(200).json({
           status: 200,
-          message: "Succesfully Profile updated",
-          data: restaurant,
+          message: "Successfully updated profile",
+          data: updatedRestaurant,
         });
       } catch (error) {
+        console.error("Update profile error:", error);
         res.status(500).json({
           status: 500,
-          message: "Server Internal Error",
+          message: "Internal server error",
           error: error instanceof Error ? error.message : error,
         });
       }
@@ -684,6 +724,16 @@ class RestaurantController {
       }
     },
   ];
+
+  // DELETE /api/restaurant/orders/runtime/:orderId
+  public async deleteOrderRunTime(): Promise<void> {
+    try {
+      const failedOrders = await Order.deleteMany({ status: "failed" });
+      console.log(`Deleted ${failedOrders.deletedCount} failed orders`);
+    } catch (error) {
+      console.error("Error deleting failed orders:", error);
+    }
+  }
 }
 
 export default new RestaurantController();

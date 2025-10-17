@@ -11,6 +11,7 @@ const auth_1 = require("../middlewares/auth");
 const mongoose_1 = __importDefault(require("mongoose"));
 const multer_1 = require("../middlewares/multer");
 const uploadsClodinary_1 = require("../utils/uploadsClodinary");
+const handlerUploads_1 = require("../utils/handlerUploads");
 class RestaurantController {
     constructor() {
         // GET /api/restaurant/public/:uniqueUrl
@@ -306,6 +307,7 @@ class RestaurantController {
         // GET /api/restaurant/orders/history
         this.ordersHistory = [
             auth_1.verifyToken,
+            multer_1.uploadImages,
             async (req, res) => {
                 try {
                     const user = req.user;
@@ -344,29 +346,43 @@ class RestaurantController {
             },
         ];
         // PUT /api/restaurant/profile
+        // Min Intergrate
         this.updateProfile = [
             auth_1.verifyToken,
             async (req, res) => {
                 try {
                     const user = req.user;
-                    const restaurant = await Restaurant_1.default.findOneAndUpdate({ ownerAuthId: user._id }, { $set: req.body }, { new: true });
+                    const restaurant = await Restaurant_1.default.findOne({ ownerAuthId: user._id });
                     if (!restaurant) {
-                        res.status(404).json({
+                        return res.status(404).json({
                             status: 404,
-                            message: "Restaurant NotFound",
+                            message: "Restaurant not found",
                         });
-                        return;
                     }
-                    res.status(200).json({
+                    let documentUrl = { banner: "", logoUrl: "", pitch: "" };
+                    const files = req.files;
+                    documentUrl.logoUrl = await (0, handlerUploads_1.handleUpload)(files?.logoRestaurant?.[0], req.body.logoRestaurant, "logoRestaurant");
+                    documentUrl.banner = await (0, handlerUploads_1.handleUpload)(files?.bannerRestaurant?.[0], req.body.bannerRestaurant, "bannerRestaurant");
+                    documentUrl.pitch = await (0, handlerUploads_1.handleUpload)(files?.pitchRestaurant?.[0], req.body.pitchRestaurant, "pitchRestaurant");
+                    const updatedData = {
+                        ...req.body,
+                        ...(documentUrl.logoUrl && { logoUrl: documentUrl.logoUrl }),
+                        ...(documentUrl.banner && { banner: documentUrl.banner }),
+                        ...(documentUrl.pitch && { pitch: documentUrl.pitch }),
+                    };
+                    // Update data restoran
+                    const updatedRestaurant = await Restaurant_1.default.findOneAndUpdate({ ownerAuthId: user._id }, { $set: updatedData }, { new: true });
+                    return res.status(200).json({
                         status: 200,
-                        message: "Succesfully Profile updated",
-                        data: restaurant,
+                        message: "Successfully updated profile",
+                        data: updatedRestaurant,
                     });
                 }
                 catch (error) {
+                    console.error("Update profile error:", error);
                     res.status(500).json({
                         status: 500,
-                        message: "Server Internal Error",
+                        message: "Internal server error",
                         error: error instanceof Error ? error.message : error,
                     });
                 }
@@ -628,6 +644,16 @@ class RestaurantController {
                 }
             },
         ];
+    }
+    // DELETE /api/restaurant/orders/runtime/:orderId
+    async deleteOrderRunTime() {
+        try {
+            const failedOrders = await Order_1.default.deleteMany({ status: "failed" });
+            console.log(`Deleted ${failedOrders.deletedCount} failed orders`);
+        }
+        catch (error) {
+            console.error("Error deleting failed orders:", error);
+        }
     }
 }
 exports.default = new RestaurantController();

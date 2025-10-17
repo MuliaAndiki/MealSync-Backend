@@ -10,12 +10,15 @@ const AuthRouter_1 = __importDefault(require("./routes/AuthRouter"));
 const UserRouter_1 = __importDefault(require("./routes/UserRouter"));
 const SuperAdminRouter_1 = __importDefault(require("./routes/SuperAdminRouter"));
 const RestaurantRouter_1 = __importDefault(require("./routes/RestaurantRouter"));
+const RestaurantController_1 = __importDefault(require("./controllers/RestaurantController"));
 const PaymentRouter_1 = __importDefault(require("./routes/PaymentRouter"));
+const node_cron_1 = __importDefault(require("node-cron"));
 class App {
     constructor() {
         this.app = (0, express_1.default)();
         this.middlewares();
         this.routes();
+        this.runCron();
     }
     middlewares() {
         this.app.use((0, cors_1.default)({ origin: "*", optionsSuccessStatus: 200 }));
@@ -36,6 +39,12 @@ class App {
                 message: "Hello World with TypeScript!",
                 timestamp: new Date().toISOString(),
             });
+        });
+    }
+    runCron() {
+        node_cron_1.default.schedule("0 0 * * *", async () => {
+            console.log("Running cron job to reset daily orders at midnight");
+            await RestaurantController_1.default.deleteOrderRunTime();
         });
     }
 }

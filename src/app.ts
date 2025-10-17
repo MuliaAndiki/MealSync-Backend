@@ -5,8 +5,9 @@ import authRouter from "./routes/AuthRouter";
 import UserRouter from "./routes/UserRouter";
 import SuperAdminRouter from "./routes/SuperAdminRouter";
 import RestaurantRouter from "./routes/RestaurantRouter";
+import RestaurantController from "./controllers/RestaurantController";
 import PaymentRouter from "./routes/PaymentRouter";
-
+import nodeCron from "node-cron";
 class App {
   public app: Application;
 
@@ -14,6 +15,7 @@ class App {
     this.app = express();
     this.middlewares();
     this.routes();
+    this.runCron();
   }
 
   private middlewares(): void {
@@ -36,6 +38,13 @@ class App {
         message: "Hello World with TypeScript!",
         timestamp: new Date().toISOString(),
       });
+    });
+  }
+
+  private runCron(): void {
+    nodeCron.schedule("0 0 * * *", async () => {
+      console.log("Running cron job to reset daily orders at midnight");
+      await RestaurantController.deleteOrderRunTime();
     });
   }
 }

@@ -353,7 +353,7 @@ class UserController {
             },
         ];
         // GET /api/user/orders
-        this.getOrdersUserRestaurant = [
+        this.getOrdersUser = [
             auth_1.verifyToken,
             async (req, res) => {
                 try {

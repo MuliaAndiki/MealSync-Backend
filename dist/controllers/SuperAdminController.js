@@ -12,6 +12,7 @@ const uploadsClodinary_1 = require("../utils/uploadsClodinary");
 const multer_1 = require("../middlewares/multer");
 const slug_1 = require("../utils/slug");
 const qrcode_1 = __importDefault(require("qrcode"));
+const handlerUploads_1 = require("../utils/handlerUploads");
 class SuperAdminController {
     constructor() {
         // POST /api/superadmin/restaurant
@@ -45,30 +46,13 @@ class SuperAdminController {
                         const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "logoRestaurant", "image.png");
                         documentUrl.logoUrl = result.secure_url;
                     }
-                    if (req.files && req.files.bannerRestaurant?.[0]) {
-                        const file = req.files.bannerRestaurant[0];
-                        const buffer = file.buffer;
-                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "bannerRestaurant", file.originalname);
-                        documentUrl.banner = result.secure_url;
-                    }
-                    else if (req.body.bannerRestaurant) {
-                        const base64Data = req.body.bannerRestaurant;
-                        const buffer = Buffer.from(base64Data.split(",")[1], "base64");
-                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "bannerRestaurant", "image.png");
-                        documentUrl.banner = result.secure_url;
-                    }
-                    if (req.files && req.files.pitchRestaurant?.[0]) {
-                        const file = req.files.pitchRestaurant[0];
-                        const buffer = file.buffer;
-                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "pitchRestaurant", file.originalname);
-                        documentUrl.pitch = result.secure_url;
-                    }
-                    else if (req.body.pitchRestaurant) {
-                        const base64Data = req.body.pitchRestaurant;
-                        const buffer = Buffer.from(base64Data.split(",")[1], "base64");
-                        const result = await (0, uploadsClodinary_1.uploadCloudinary)(buffer, "pitchRestaurant", "image.png");
-                        documentUrl.pitch = result.secure_url;
-                    }
+                    const files = req.files;
+                    documentUrl.banner =
+                        (await (0, handlerUploads_1.handleUpload)(files?.bannerRestaurant?.[0], req.body.bannerRestaurant, "bannerRestaurant")) || "";
+                    documentUrl.pitch =
+                        (await (0, handlerUploads_1.handleUpload)(files?.pitchRestaurant?.[0], req.body.pitchRestaurant, "pitchRestaurant")) || "";
+                    documentUrl.pitch =
+                        (await (0, handlerUploads_1.handleUpload)(files?.pitchRestaurant?.[0], req.body.pitchRestaurant, "pitchRestaurant")) || "";
                     const hash = await bcryptjs_1.default.hash(password, 10);
                     const restaurantAuth = await Auth_1.default.create({
                         email,

@@ -23,7 +23,7 @@ const OrderSchema = new mongoose_1.Schema({
     total: { type: Number, required: true },
     status: {
         type: String,
-        enum: ["pending", "paid", "failed"],
+        enum: ["pending", "paid", "failed", "completed", "cancelled"],
         default: "pending",
     },
     snapToken: { type: String },

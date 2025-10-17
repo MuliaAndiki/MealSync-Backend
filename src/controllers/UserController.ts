@@ -387,7 +387,7 @@ class UserController {
   ];
 
   // GET /api/user/orders
-  public getOrdersUserRestaurant = [
+  public getOrdersUser = [
     verifyToken,
     async (req: Request, res: Response): Promise<void> => {
       try {

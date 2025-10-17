@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import Auth from "../models/Auth";
 import Restaurant from "../models/Restaurant";
 import bcrypt from "bcryptjs";
@@ -8,10 +8,11 @@ import { uploadCloudinary } from "../utils/uploadsClodinary";
 import { uploadImages } from "../middlewares/multer";
 import { generateUniqueRestaurantUrl } from "../utils/slug";
 import QRCode from "qrcode";
+import { handleUpload } from "../utils/handlerUploads";
 
 class SuperAdminController {
   // POST /api/superadmin/restaurant
-  public createRestaurant = [
+  public createRestaurant: RequestHandler[] = [
     verifyToken,
     uploadImages,
     requireRole(["superadmin"]),
@@ -56,49 +57,30 @@ class SuperAdminController {
           documentUrl.logoUrl = result.secure_url;
         }
 
-        if (req.files && (req.files as any).bannerRestaurant?.[0]) {
-          const file = (req.files as any).bannerRestaurant[0];
-          const buffer = file.buffer;
+        const files = req.files as
+          | Record<string, Express.Multer.File[]>
+          | undefined;
 
-          const result = await uploadCloudinary(
-            buffer,
-            "bannerRestaurant",
-            file.originalname
-          );
-          documentUrl.banner = result.secure_url;
-        } else if (req.body.bannerRestaurant) {
-          const base64Data = req.body.bannerRestaurant;
-          const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+        documentUrl.banner =
+          (await handleUpload(
+            files?.bannerRestaurant?.[0],
+            req.body.bannerRestaurant,
+            "bannerRestaurant"
+          )) || "";
 
-          const result = await uploadCloudinary(
-            buffer,
-            "bannerRestaurant",
-            "image.png"
-          );
-          documentUrl.banner = result.secure_url;
-        }
+        documentUrl.pitch =
+          (await handleUpload(
+            files?.pitchRestaurant?.[0],
+            req.body.pitchRestaurant,
+            "pitchRestaurant"
+          )) || "";
 
-        if (req.files && (req.files as any).pitchRestaurant?.[0]) {
-          const file = (req.files as any).pitchRestaurant[0];
-          const buffer = file.buffer;
-
-          const result = await uploadCloudinary(
-            buffer,
-            "pitchRestaurant",
-            file.originalname
-          );
-          documentUrl.pitch = result.secure_url;
-        } else if (req.body.pitchRestaurant) {
-          const base64Data = req.body.pitchRestaurant;
-          const buffer = Buffer.from(base64Data.split(",")[1], "base64");
-
-          const result = await uploadCloudinary(
-            buffer,
-            "pitchRestaurant",
-            "image.png"
-          );
-          documentUrl.pitch = result.secure_url;
-        }
+        documentUrl.pitch =
+          (await handleUpload(
+            files?.pitchRestaurant?.[0],
+            req.body.pitchRestaurant,
+            "pitchRestaurant"
+          )) || "";
 
         const hash = await bcrypt.hash(password, 10);
         const restaurantAuth = await Auth.create({

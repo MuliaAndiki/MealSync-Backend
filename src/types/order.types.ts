@@ -9,4 +9,6 @@ export interface IOrder extends Document {
   status: OrderStatus;
   snapToken?: string; // midtrans token
   chairNo?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

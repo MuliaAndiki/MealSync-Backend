@@ -131,6 +131,11 @@
   resolved "https://registry.npmjs.org/@types/luxon/-/luxon-3.7.1.tgz"
   integrity sha512-H3iskjFIAn5SlJU7OuxUmTEpebK6TKB8rxZShDslBMZJ5u9S//KM1sbdAisiSrqwLQncVjnpi2OK2J51h+4lsg==
 
+"@types/midtrans-client@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.npmjs.org/@types/midtrans-client/-/midtrans-client-1.4.0.tgz"
+  integrity sha512-7EhZ3VR/g4JhIpIywuOllBFjaS0ZDjlgbPlPmma6XsC+i6rx5+9P8Rk1y7gtRh7TRL9Zerr4MAtS3m9pIuIveQ==
+
 "@types/mime@^1":
   version "1.3.5"
   resolved "https://registry.npmjs.org/@types/mime/-/mime-1.3.5.tgz"

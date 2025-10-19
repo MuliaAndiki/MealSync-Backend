@@ -1,94 +1,152 @@
 import { Request, Response } from "express";
 import midtransClient from "midtrans-client";
-import Cart from "../models/Cart";
 import Order from "../models/Order";
-import Product from "../models/Product";
-import Restaurant from "../models/Restaurant";
 import { JwtPayload } from "../types/auth.types";
+import { verifyToken } from "../middlewares/auth";
 
 class PaymentController {
   // POST /api/user/checkout
-  public checkout = async (req: Request, res: Response) => {
-    try {
-      const user = req.user as JwtPayload;
-      const cart = await Cart.findOne({ userId: user._id });
-      if (!cart || cart.items.length === 0) {
-        return res.status(400).json({ status: 400, message: "Cart is empty" });
-      }
-      const firstProduct = await Product.findById(cart.items[0].productId);
-      if (!firstProduct)
-        return res
-          .status(400)
-          .json({ status: 400, message: "Invalid cart items" });
-      const restaurantId = firstProduct.restaurantId;
+  public checkout = [
+    verifyToken,
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const user = req.user as JwtPayload;
+        const { orderId } = req.body;
 
-      const itemsDetail = [] as any[];
-      let total = 0;
-      for (const it of cart.items) {
-        const p = await Product.findById(it.productId);
-        if (!p) continue;
-        itemsDetail.push({
-          id: p._id.toString(),
-          price: p.price,
-          quantity: it.quantity,
-          name: p.name,
+        if (!orderId) {
+          res.status(400).json({
+            status: 400,
+            message: "Order ID is required",
+          });
+          return;
+        }
+
+        const order = await Order.findOne({
+          _id: orderId,
+          userId: user._id,
         });
-        total += p.price * it.quantity;
+
+        if (!order) {
+          res.status(404).json({
+            status: 404,
+            message: "Order Not Found",
+          });
+          return;
+        }
+
+        if (order.status !== "pending") {
+          res.status(400).json({
+            status: 400,
+            message: "Order is not in pending status",
+          });
+          return;
+        }
+
+        if (order.snapToken) {
+          res.status(400).json({
+            status: 400,
+            message: "Payment already initiated for this order",
+          });
+          return;
+        }
+
+        const itemsDetail = order.items.map((item) => ({
+          id: String(item.productId),
+          price: item.price,
+          quantity: item.quantity,
+          name: item.name,
+        }));
+
+        const snap = new (midtransClient as any).Snap({
+          isProduction: false,
+          serverKey: process.env.MIDTRANS_SERVER_KEY,
+          clientKey: process.env.MIDTRANS_CLIENT_KEY,
+        });
+
+        const transaction = await snap.createTransaction({
+          transaction_details: {
+            order_id: String(order._id),
+            gross_amount: order.total,
+          },
+          item_details: itemsDetail,
+          customer_details: {
+            first_name: user.fullName,
+            email: user.email,
+          },
+        });
+
+        order.snapToken = transaction.token;
+        await order.save();
+
+        res.status(201).json({
+          status: 201,
+          message: "Checkout successfully created",
+          data: {
+            orderId: order._id,
+            snapToken: transaction.token,
+            redirect_url: transaction.redirect_url,
+          },
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
       }
+    },
+  ];
 
-      const order = await Order.create({
-        userId: user._id,
-        restaurantId,
-        items: itemsDetail.map((i) => ({
-          productId: i.id,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-        })),
-        total,
-        status: "pending",
-      });
+  // GET /api/user/checkout/:orderId
+  public getCheckout = [
+    verifyToken,
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const user = req.user as JwtPayload;
+        const { orderId } = req.params;
 
-      const snap = new (midtransClient as any).Snap({
-        isProduction: false,
-        serverKey: process.env.MIDTRANS_SERVER_KEY,
-        clientKey: process.env.MIDTRANS_CLIENT_KEY,
-      });
+        if (!orderId) {
+          res.status(400).json({
+            status: 400,
+            message: "Order ID is required",
+          });
+          return;
+        }
 
-      const transaction = await snap.createTransaction({
-        transaction_details: {
-          // order_id: order._id.toString(),
-          gross_amount: total,
-        },
-        item_details: itemsDetail,
-        customer_details: {
-          first_name: user.fullName,
-          email: user.email,
-          // phone: user.phone,
-        },
-      });
+        const order = await Order.findOne({
+          _id: orderId,
+          userId: user._id,
+        });
 
-      order.snapToken = transaction.token;
-      await order.save();
+        if (!order) {
+          res.status(404).json({
+            status: 404,
+            message: "Order Not Found",
+          });
+          return;
+        }
 
-      // clear cart after creating transaction
-      cart.items = [];
-      cart.total = 0;
-      await cart.save();
-
-      return res.status(200).json({
-        status: 200,
-        message: "Checkout created",
-        data: {
-          orderId: order._id,
-          snapToken: transaction.token,
-          redirect_url: transaction.redirect_url,
-        },
-      });
-    } catch (err: any) {
-      return res.status(500).json({ status: 500, message: err.message });
-    }
-  };
+        res.status(200).json({
+          status: 200,
+          message: "Successfully Get Checkout",
+          data: {
+            orderId: order._id,
+            snapToken: order.snapToken,
+            total: order.total,
+            status: order.status,
+            items: order.items,
+            createdAt: order.createdAt,
+          },
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: 500,
+          message: "Server Internal Error",
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    },
+  ];
 }
 
 export default new PaymentController();

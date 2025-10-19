@@ -9,8 +9,11 @@ class PaymentRouter {
   }
 
   private router() {
-    // SetUp
-    this.paymentRouter.get;
+    this.paymentRouter.post("/api/user/checkout", PaymentController.checkout);
+    this.paymentRouter.get(
+      "/api/user/checkout/:orderId",
+      PaymentController.getCheckout
+    );
   }
 }
 

@@ -8,8 +8,8 @@ const Order_1 = __importDefault(require("../models/Order"));
 const auth_1 = require("../middlewares/auth");
 class PaymentController {
     constructor() {
-        // POST /api/user/checkout
-        this.checkout = [
+        // POST /api/user/payment
+        this.payment = [
             auth_1.verifyToken,
             async (req, res) => {
                 try {

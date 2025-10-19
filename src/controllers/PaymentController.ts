@@ -5,8 +5,8 @@ import { JwtPayload } from "../types/auth.types";
 import { verifyToken } from "../middlewares/auth";
 
 class PaymentController {
-  // POST /api/user/checkout
-  public checkout = [
+  // POST /api/user/payment
+  public payment = [
     verifyToken,
     async (req: Request, res: Response): Promise<void> => {
       try {

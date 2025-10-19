@@ -11,8 +11,8 @@ class PaymentRouter {
         this.router();
     }
     router() {
-        this.paymentRouter.post("/api/user/checkout", PaymentController_1.default.checkout);
-        this.paymentRouter.get("/api/user/checkout/:orderId", PaymentController_1.default.getCheckout);
+        this.paymentRouter.post("/checkout", PaymentController_1.default.payment);
+        this.paymentRouter.get("/checkout/:orderId", PaymentController_1.default.getCheckout);
     }
 }
 exports.default = new PaymentRouter().paymentRouter;

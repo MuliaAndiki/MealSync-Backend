@@ -279,7 +279,10 @@ class RestaurantController {
                         });
                         return;
                     }
-                    const orders = await Order_1.default.find({ restaurantId: restaurant._id }).sort({
+                    const orders = await Order_1.default.find({
+                        restaurantId: restaurant._id,
+                        status: { $in: ["pending"] },
+                    }).sort({
                         createdAt: -1,
                     });
                     if (!orders) {
@@ -346,7 +349,6 @@ class RestaurantController {
             },
         ];
         // PUT /api/restaurant/profile
-        // Min Intergrate
         this.updateProfile = [
             auth_1.verifyToken,
             async (req, res) => {

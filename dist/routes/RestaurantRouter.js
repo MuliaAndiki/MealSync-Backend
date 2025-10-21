@@ -23,6 +23,7 @@ class RestaurantRouter {
         this.restaurantRouter.put("/profile", RestaurantController_1.default.updateProfile);
         this.restaurantRouter.post("/chair", RestaurantController_1.default.createChair);
         this.restaurantRouter.get("/chair", RestaurantController_1.default.getChairs);
+        this.restaurantRouter.put("/chair/:_id", RestaurantController_1.default.updateChair);
         this.restaurantRouter.get("/profile", RestaurantController_1.default.getProfileRestaurant);
         this.restaurantRouter.get("/profile/:uniqueUrl", RestaurantController_1.default.getProfileRestaurant);
         this.restaurantRouter.delete("/chair/:_id", RestaurantController_1.default.deleteChair);

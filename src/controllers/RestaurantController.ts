@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import { uploadImages } from "../middlewares/multer";
 import { uploadCloudinary } from "../utils/uploadsClodinary";
 import { handleUpload } from "../utils/handlerUploads";
+import { stat } from "fs";
 
 class RestaurantController {
   // GET /api/restaurant/public/:uniqueUrl
@@ -302,7 +303,10 @@ class RestaurantController {
           });
           return;
         }
-        const orders = await Order.find({ restaurantId: restaurant._id }).sort({
+        const orders = await Order.find({
+          restaurantId: restaurant._id,
+          status: { $in: ["pending"] },
+        }).sort({
           createdAt: -1,
         });
         if (!orders) {
@@ -312,6 +316,7 @@ class RestaurantController {
           });
           return;
         }
+
         res.status(200).json({
           status: 200,
           message: "Successfully Orders fetched",
@@ -371,7 +376,7 @@ class RestaurantController {
   ];
 
   // PUT /api/restaurant/profile
-  // Min Intergrate
+
   public updateProfile: RequestHandler[] = [
     verifyToken,
     async (req: Request, res: Response): Promise<any> => {

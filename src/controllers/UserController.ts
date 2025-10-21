@@ -394,7 +394,7 @@ class UserController {
         const user = req.user as JwtPayload;
         const orders = await Order.find({
           userId: user._id,
-          status: { $in: ["pending", "paid"] },
+          status: { $in: ["pending"] },
         }).sort({ createdAt: -1 });
         if (!orders) {
           res.status(404).json({

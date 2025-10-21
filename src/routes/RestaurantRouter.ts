@@ -38,6 +38,7 @@ class RestaurantRouter {
     this.restaurantRouter.put("/profile", RestaurantController.updateProfile);
     this.restaurantRouter.post("/chair", RestaurantController.createChair);
     this.restaurantRouter.get("/chair", RestaurantController.getChairs);
+    this.restaurantRouter.put("/chair/:_id", RestaurantController.updateChair);
     this.restaurantRouter.get(
       "/profile",
       RestaurantController.getProfileRestaurant

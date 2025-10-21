@@ -13,6 +13,7 @@ class PaymentRouter {
     router() {
         this.paymentRouter.post("/checkout", PaymentController_1.default.payment);
         this.paymentRouter.get("/checkout/:orderId", PaymentController_1.default.getCheckout);
+        this.paymentRouter.get("/status", PaymentController_1.default.getPaidOrders);
     }
 }
 exports.default = new PaymentRouter().paymentRouter;

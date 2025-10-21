@@ -70,6 +70,7 @@ class PaymentController {
                         },
                     });
                     order.snapToken = transaction.token;
+                    await order.updateOne({ status: "paid" });
                     await order.save();
                     res.status(201).json({
                         status: 201,
@@ -126,6 +127,30 @@ class PaymentController {
                             items: order.items,
                             createdAt: order.createdAt,
                         },
+                    });
+                }
+                catch (error) {
+                    res.status(500).json({
+                        status: 500,
+                        message: "Server Internal Error",
+                        error: error instanceof Error ? error.message : error,
+                    });
+                }
+            },
+        ];
+        this.getPaidOrders = [
+            auth_1.verifyToken,
+            async (req, res) => {
+                try {
+                    const user = req.user;
+                    const orders = await Order_1.default.find({
+                        userId: user._id,
+                        status: "paid",
+                    }).sort({ createdAt: -1 });
+                    res.status(200).json({
+                        status: 200,
+                        message: "Successfully Get Paid Orders",
+                        data: orders,
                     });
                 }
                 catch (error) {

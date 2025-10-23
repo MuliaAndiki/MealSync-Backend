@@ -37,6 +37,16 @@ const Auth = new Schema<partialAuth>(
       default: "user",
       required: true,
     },
+    otp: {
+      type: String,
+    },
+    expOtp: {
+      type: Date,
+    },
+    isVerify: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

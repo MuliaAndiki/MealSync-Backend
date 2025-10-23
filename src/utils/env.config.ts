@@ -9,6 +9,11 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string(),
   CLOUDINARY_API_KEY: z.string(),
   CLOUDINARY_API_SECRET: z.string(),
+  SMTP_HOST: z.string(),
+  SMTP_PORT: z.string().transform((val) => Number(val)),
+  SMTP_USER: z.string(),
+  SMTP_PASS: z.string(),
+  SMTP_SECURE: z.preprocess((val) => val === "true", z.boolean()),
 });
 
 const _env = envSchema.safeParse(process.env);

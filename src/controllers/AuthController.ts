@@ -7,10 +7,15 @@ import {
   JwtPayload,
   PickLogout,
   PickId,
+  PickForgotPasswordByEmail,
+  PickVerifyOtp,
+  PickResetPassword,
 } from "../types/auth.types";
 import { verifyToken } from "../middlewares/auth";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { generateOtp } from "../utils/otp-handler";
+import { sendOTPEmail } from "../utils/mailer";
 
 declare global {
   namespace Express {
@@ -44,6 +49,8 @@ class AuthController {
         });
         return;
       }
+      const otp = generateOtp(6);
+      const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
       bcryptjs.hash(auth.password, 10, async (err, hash): Promise<void> => {
         if (err) {
@@ -55,9 +62,13 @@ class AuthController {
           fullName: auth.fullName,
           password: hash,
           role: auth.role || "user",
+          otp: otp,
+          isVerify: false,
         });
+        newAuth.expOtp = otpExpires;
 
         await newAuth.save();
+        await sendOTPEmail(auth.email, otp);
 
         res.status(201).json({
           status: 200,
@@ -223,6 +234,129 @@ class AuthController {
       }
     },
   ];
+  public forgotPasswordByEmail = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const auth: PickForgotPasswordByEmail = req.body;
+      const user = await Auth.findOne({ email: auth.email });
+      if (!user) {
+        res.status(404).json({
+          status: 404,
+          message: "Server Internal Error",
+        });
+        return;
+      }
+      const otp = generateOtp(6);
+      const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+
+      (user.otp = otp), (user.expOtp = otpExpires), await user.save();
+      await sendOTPEmail(auth.email, otp);
+
+      res.status(200).json({
+        status: 200,
+        message: "Otp Send",
+        data: user,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 500,
+        message: "Server Internal Error",
+        error: error instanceof Error ? error.message : error,
+      });
+      return;
+    }
+  };
+
+  public verifyOtp = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const auth: PickVerifyOtp = req.body;
+
+      if (!auth.email) {
+        res.status(404).json({
+          status: 404,
+          message: "Email Is Requared",
+        });
+        return;
+      }
+      const user = await Auth.findOne({ email: auth.email });
+
+      if (!user) {
+        res.status(404).json({
+          status: 404,
+          message: "Email Not Found",
+        });
+        return;
+      }
+
+      if (user.otp !== auth.otp) {
+        res.status(400).json({
+          status: 400,
+          message: "Otp Failed",
+        });
+        return;
+      }
+      user.isVerify = true;
+      user.otp = undefined;
+      await user.save();
+      res.status(201).json({
+        status: 201,
+        message: "Otp IsVerify",
+        data: user,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 500,
+        message: "Server Internal Error",
+        error: error instanceof Error ? error.message : error,
+      });
+    }
+  };
+  public resetPassword = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const auth: PickResetPassword = req.body;
+      if (!auth.email) {
+        res.status(404).json({
+          status: 404,
+          message: "Email Body IsRequired",
+        });
+        return;
+      }
+      const user = await Auth.findOne({ email: auth.email });
+      if (!user) {
+        res.status(400).json({
+          status: 404,
+          message: "Email User Not Found",
+        });
+        return;
+      }
+
+      if (!user.isVerify) {
+        res.status(403).json({
+          status: 403,
+          message: "Account Costumer Not Verify",
+        });
+        return;
+      }
+      const hash = await bcryptjs.hash(auth.password, 10);
+      user.password = hash;
+      (user.otp = undefined), (user.expOtp = undefined);
+      await user.save();
+
+      res.status(200).json({
+        status: "200",
+        message: "New Password Is Create",
+        data: user,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 500,
+        message: "Server Internal Error",
+        error: error instanceof Error ? error.message : error,
+      });
+    }
+  };
 }
 
 export default new AuthController();

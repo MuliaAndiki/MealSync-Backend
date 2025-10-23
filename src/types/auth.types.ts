@@ -9,6 +9,9 @@ export interface IAuth extends Document {
   role: UserRole;
   createdAt: Date;
   updateAt: Date;
+  otp: string;
+  expOtp: Date;
+  isVerify: Boolean;
   __v: any;
 }
 
@@ -21,5 +24,7 @@ export type PickLogin = Pick<IAuth, "email" | "password">;
 export type PickLogout = Pick<IAuth, "_id">;
 
 export type UserRole = "superadmin" | "restaurant" | "user";
-
+export type PickForgotPasswordByEmail = Pick<IAuth, "email">;
 export type PickId = Pick<IAuth, "_id">;
+export type PickVerifyOtp = Pick<IAuth, "email" | "otp">;
+export type PickResetPassword = Pick<IAuth, "email" | "password">;

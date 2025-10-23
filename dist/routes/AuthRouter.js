@@ -15,6 +15,9 @@ class AuthRouter {
         this.authRouter.post("/login", AuthController_1.default.login);
         this.authRouter.post("/logout", AuthController_1.default.logout);
         this.authRouter.get("/profile", AuthController_1.default.getProfileByUser);
+        this.authRouter.post("/email", AuthController_1.default.forgotPasswordByEmail);
+        this.authRouter.post("/verify", AuthController_1.default.verifyOtp);
+        this.authRouter.post("/resetPassword", AuthController_1.default.resetPassword);
     }
 }
 exports.default = new AuthRouter().authRouter;

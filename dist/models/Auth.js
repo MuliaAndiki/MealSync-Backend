@@ -66,5 +66,15 @@ const Auth = new mongoose_1.Schema({
         default: "user",
         required: true,
     },
+    otp: {
+        type: String,
+    },
+    expOtp: {
+        type: Date,
+    },
+    isVerify: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model("Auth", Auth);

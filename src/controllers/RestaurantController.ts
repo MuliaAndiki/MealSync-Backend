@@ -10,7 +10,7 @@ import mongoose from "mongoose";
 import { uploadImages } from "../middlewares/multer";
 import { uploadCloudinary } from "../utils/uploadsClodinary";
 import { handleUpload } from "../utils/handlerUploads";
-import { stat } from "fs";
+import { getIO } from "../utils/socket";
 
 class RestaurantController {
   // GET /api/restaurant/public/:uniqueUrl
@@ -484,6 +484,8 @@ class RestaurantController {
         restaurant.chairId.push(newChair._id);
         await restaurant.save();
 
+        const io = getIO();
+        io.to(restaurant._id.toString()).emit("chair:new", newChair);
         res.status(201).json({
           status: 201,
           message: "Success Create Chair",

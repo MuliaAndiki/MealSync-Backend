@@ -1,5 +1,4 @@
 import { Server } from "socket.io";
-import http from "http";
 import type { Server as HttpServer } from "http";
 
 let io: Server | null = null;

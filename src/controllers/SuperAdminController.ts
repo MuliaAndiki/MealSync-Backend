@@ -89,7 +89,7 @@ class SuperAdminController {
           password: hash,
           role: "restaurant",
         });
-        const fullUrl = `http://localhost:3000/user/dashboard/restaurant/${uniqueUrl}`;
+        const fullUrl = `https://meal-sync-frontpage.vercel.app/user/dashboard/restaurant/${uniqueUrl}`;
         const qrDataUrl = await QRCode.toDataURL(fullUrl);
 
         const finalProfile = {
